@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Partículas</string>
+    <string name="description">Partículas multicolor que acuden a tu tacto y se multiplican al tocarlas</string>
+    <string name="set_wallpaper">Establecer como fondo</string>
+</resources>
