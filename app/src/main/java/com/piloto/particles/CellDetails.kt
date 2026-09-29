@@ -314,45 +314,92 @@ object CellDetails {
         label("9 tripletes", 110f, 168f, L)
     } }
 
+    private fun sm(x: Float) = x * x * (3f - 2f * x)
+    private fun seg(u: Float, a: Float, b: Float) = ((u - a) / (b - a)).coerceIn(0f, 1f)
+    private fun mix(a: Float, b: Float, t: Float) = a + (b - a) * t
+
+    private fun ion(k: Kit, x: Float, y: Float, c: Int, s: String, a: Float = 1f, r: Float = 4.8f) {
+        val al = (a.coerceIn(0f, 1f) * 255).toInt()
+        if (al < 4) return
+        with(k) {
+            fill((al shl 24) or (c and 0xFFFFFF)); circle(x, y, r)
+            stroke((al / 2 shl 24) or 0xFFFFFF, 0.6f); circle(x, y, r)
+            text(s, x, y + 2.3f, 6.2f, (al shl 24) or 0xFFFFFF)
+        }
+    }
+
+    private val NA = 0x2FB04A; private val KK = 0x8A66FF; private val ATPC = 0xFFC933; private val GLU = 0xFF5FA8; private val H2O = 0x5FC8FF
+
     fun membrane(prok: Boolean) = Info(
-        if (prok) "Membrana plasmática" else "Membrana plasmática",
-        "Doble capa de fosfolípidos: las cabezas, que aman el agua, miran hacia fuera y las colas, que la rechazan, se esconden dentro. " +
-            "Es una barrera selectiva: los canales y transportadores dejan pasar iones y nutrientes, los receptores reciben señales y las glucoproteínas " +
-            "actúan como 'carnet de identidad' de la célula. El colesterol regula su fluidez." +
-            (if (prok) " En bacterias también aloja la cadena respiratoria y la ATP sintasa." else "")
+        "Membrana plasmática: bombas y transportadores",
+        "La membrana es una doble capa de fosfolípidos (cabezas hidrófilas hacia fuera, colas hidrófobas dentro) con proteínas incrustadas. " +
+            "Transporte pasivo: los canales y las acuaporinas dejan pasar iones y agua a favor de su gradiente, sin gastar energía. " +
+            "Cotransporte: el transportador Na⁺–glucosa usa el Na⁺ que quiere entrar para arrastrar glucosa. " +
+            "Transporte activo: la bomba Na⁺/K⁺-ATPasa gasta un ATP para sacar 3 Na⁺ e introducir 2 K⁺, en contra de sus gradientes; así la célula mantiene su voltaje y el gradiente de Na⁺ que impulsa otros transportes." +
+            (if (prok) " En bacterias la cadena respiratoria de esta membrana bombea H⁺ y crea el gradiente que mueve la ATP sintasa." else "")
     ) { k, t -> with(k) {
-        for (i in 0 until 24) {
-            val x = 12f + i * 12.2f
-            val w = sin(t * 1.5f + i) * 1.5f
-            fill(col(0xFFF2C46BL)); circle(x, 100f + w, 5f); circle(x, 156f - w, 5f)
-            stroke(col(0xFFC98F3AL), 1.6f)
-            line(x - 2f, 105f + w, x - 2f, 126f); line(x + 2f, 105f + w, x + 2f + w * 0.3f, 126f)
-            line(x - 2f, 151f - w, x - 2f, 130f); line(x + 2f, 151f - w, x + 2f - w * 0.3f, 130f)
+        Sprites.drawRect(cv, "membrane", 0f, 25f, 300f, 215f)
+        // ---- Bomba Na+/K+ ATPasa (x≈59) ----
+        val u = (t / 8f) % 1f
+        val px = 58.8f
+        for (i in 0..2) {
+            val sx = 38f + i * 20f; val sy = 214f
+            val cav = 150f - i * 11f
+            val a = sm(seg(u, 0f, 0.05f)) * (1f - seg(u, 0.93f, 1f))
+            val s1 = sm(seg(u, 0.02f, 0.25f)); val s3 = sm(seg(u, 0.40f, 0.72f))
+            var x = mix(sx, px, s1); var y = mix(sy, cav, s1)
+            if (u >= 0.40f) {
+                if (s3 < 0.5f) { x = px; y = mix(cav, 98f, s3 * 2f) } else { val q = (s3 - 0.5f) * 2f; x = mix(px, 34f + i * 24f, q); y = mix(98f, 46f - i * 4f, q) }
+            }
+            ion(this, x, y, NA, "Na⁺", a)
         }
-        fill(col(0xFFFF9D3AL)); oval(40f, 112f, 50f, 128f); oval(215f, 130f, 225f, 146f)
-        // Canal iónico
-        fill(col(0xFF3FA37AL)); rrect(120f, 86f, 152f, 170f, 8f)
-        fill(col(0xFF0B161CL)); rrect(130f, 92f, 142f, 164f, 4f)
-        for (i in 0 until 4) {
-            val f = fr(t * 0.3f + i / 4f)
-            fill(CYAN); circle(136f, 30f + f * 200f, 3.5f)
+        for (i in 0..1) {
+            val a = sm(seg(u, 0.30f, 0.40f)) * (1f - seg(u, 0.95f, 1f))
+            val s2 = sm(seg(u, 0.42f, 0.62f)); val s4 = sm(seg(u, 0.66f, 0.95f))
+            var x = mix(40f + i * 36f, px, s2); var y = mix(40f, 100f, s2)
+            if (u >= 0.66f) { x = mix(px, 44f + i * 26f, s4); y = mix(100f + 0f, 214f, s4) }
+            ion(this, x, y, KK, "K⁺", a)
         }
-        // Receptor + ligando
-        stroke(col(0xFFE05A8AL), 5f)
-        line(205f, 96f, 205f, 60f); line(205f, 70f, 190f, 52f); line(205f, 70f, 220f, 52f)
-        val bind = 0.5f + 0.5f * sin(t * 1.2f)
-        fill(GOLD); circle(232f - bind * 24f, 40f + bind * 8f, 5f)
-        stroke(col(0xFFE05A8AL), 5f); line(205f, 160f, 205f, 190f)
-        // Glucoproteína
-        stroke(col(0xFF8FD0FFL), 2.5f); line(70f, 95f, 70f, 70f)
-        for (i in 0..2) { fill(col(0xFF8FD0FFL)); circle(62f + i * 8f, 62f + (i % 2) * 6f, 3.5f) }
-        label("Cabezas hidrófilas", 110f, 78f, L)
-        label("Colas hidrófobas", 60f, 143f, L, Paint.Align.CENTER)
-        label("Canal iónico", 136f, 205f, L)
-        label("Receptor", 250f, 96f, L)
-        label("Glucoproteína", 70f, 50f, L)
-        label("Colesterol", 232f, 186f, L)
-        if (prok) label("Citoplasma", 40f, 225f, L)
+        // ATP -> ADP + Pi
+        val atpIn = sm(seg(u, 0f, 0.25f))
+        val ax = mix(104f, 66f, atpIn); val ay = mix(214f, 156f, atpIn)
+        val aa = sm(seg(u, 0f, 0.06f)) * (1f - seg(u, 0.85f, 0.98f))
+        val conv = seg(u, 0.26f, 0.40f)
+        val axx = if (u > 0.75f) mix(66f, 108f, seg(u, 0.75f, 0.98f)) else ax
+        val ayy = if (u > 0.75f) mix(156f, 216f, seg(u, 0.75f, 0.98f)) else ay
+        ion(this, axx, ayy, if (conv > 0.5f) 0x9A8A55 else ATPC, if (conv > 0.5f) "ADP" else "ATP", aa, 5.6f)
+        if (u in 0.26f..0.55f) { val q = seg(u, 0.26f, 0.55f); ion(this, mix(72f, 100f, q), mix(150f, 196f, q), 0xFF8A2B, "Pi", 1f - q, 3.6f) }
+        // ---- Canal de K+ (x≈120): difusión a favor del gradiente ----
+        for (i in 0..2) {
+            val f = ((t / 5f) + i / 3f) % 1f
+            val y = mix(206f, 34f, f)
+            val x = 119.6f + (if (y > 150f || y < 92f) sin(f * 20f + i) * 10f else 0f)
+            ion(this, x, y, KK, "K⁺", sm(seg(f, 0f, 0.08f)) * (1f - seg(f, 0.92f, 1f)))
+        }
+        // ---- Cotransportador Na+-glucosa (x≈182) ----
+        val g = (t / 7f) % 1f
+        val gy = mix(36f, 210f, sm(g))
+        val gxo = if (g < 0.3f) mix(160f, 184f, sm(seg(g, 0f, 0.3f))) else if (g < 0.75f) 184f else mix(184f, 200f, seg(g, 0.75f, 1f))
+        val ga = sm(seg(g, 0f, 0.06f)) * (1f - seg(g, 0.94f, 1f))
+        ion(this, gxo + 6f, gy + 0f, GLU, "Glc", ga, 5.8f)
+        ion(this, gxo - 5f, gy - 4f, NA, "Na⁺", ga)
+        // ---- Acuaporina (x≈232 / 253): agua en fila india ----
+        for (bar in 0..1) for (i in 0..2) {
+            val f = ((t / 4f) + i / 3f + bar * 0.17f) % 1f
+            val x = (if (bar == 0) 232.4f else 253f)
+            val y = mix(40f, 206f, f)
+            val al = sm(seg(f, 0f, 0.08f)) * (1f - seg(f, 0.92f, 1f))
+            ion(this, x + (if (y < 90f || y > 156f) sin(f * 12f) * 5f else 0f), y, H2O, "H₂O", al, 4.4f)
+        }
+        // ---- Rótulos ----
+        text("EXTERIOR · Na⁺ alto", 4f, 11f, 8f, col(0xFFBFEFFFL), Paint.Align.LEFT, true)
+        text("INTERIOR · K⁺ alto", 4f, 236f, 8f, col(0xFFFFE0A0L), Paint.Align.LEFT, true)
+        val step = when { u < 0.25f -> "1 · entran 3 Na⁺ y se une ATP"; u < 0.40f -> "2 · fosforilación: cambia de forma"; u < 0.72f -> "3 · salen 3 Na⁺ · entran 2 K⁺ del exterior"; else -> "4 · K⁺ al interior · sale ADP" }
+        label(step, 150f, 26f, 7.6f)
+        label("Bomba Na⁺/K⁺", 59f, 232f, 7.6f); label("Canal K⁺", 120f, 232f, 7.6f)
+        label("Na⁺–glucosa", 184f, 232f, 7.6f); label("Acuaporina", 243f, 232f, 7.6f)
+        label("Glucoproteína", 280f, 66f, 7f, Paint.Align.CENTER)
+        label("Colesterol", 96f, 120f, 6.6f)
     } }
 
     // ---------------- Procariota ----------------

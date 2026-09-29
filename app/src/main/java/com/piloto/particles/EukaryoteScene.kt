@@ -1,5 +1,6 @@
 package com.piloto.particles
 
+import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RadialGradient
@@ -38,9 +39,9 @@ class EukaryoteScene(private val d: Float) : Scene {
     private var ex = 0f; private var ey = 0f
     private val mitos = listOf(
         Mito(-0.60f, -0.38f, 30f, 0f), Mito(0.62f, -0.50f, -25f, 1.5f), Mito(0.12f, 0.62f, 80f, 3f),
-        Mito(-0.64f, 0.05f, -60f, 4.5f), Mito(-0.32f, 0.72f, 10f, 2f)
+        Mito(-0.64f, 0.05f, -60f, 4.5f), Mito(-0.32f, 0.72f, 10f, 2f), Mito(0.42f, 0.74f, -35f, 5.5f), Mito(-0.42f, -0.68f, 50f, 3.5f)
     )
-    private val lysos = listOf(Mito(0.60f, 0.55f, 0f, 0.5f), Mito(-0.12f, 0.80f, 0f, 2.5f), Mito(0.72f, -0.16f, 0f, 4f), Mito(0.36f, 0.36f, 0f, 1f))
+    private val lysos = listOf(Mito(0.60f, 0.55f, 0f, 0.5f), Mito(-0.12f, 0.80f, 0f, 2.5f), Mito(0.72f, -0.16f, 0f, 4f), Mito(0.36f, 0.36f, 0f, 1f), Mito(-0.55f, 0.55f, 0f, 3f), Mito(0.2f, -0.78f, 0f, 2f), Mito(0.0f, 0.5f, 0f, 5f))
     private val ribos = ArrayList<Ribo>()
 
     private var cytoPaint: Paint? = null
@@ -70,11 +71,14 @@ class EukaryoteScene(private val d: Float) : Scene {
             heads[i * 4] = ox; heads[i * 4 + 1] = oy; heads[i * 4 + 2] = ix; heads[i * 4 + 3] = iy
             tails[i * 4] = ox; tails[i * 4 + 1] = oy; tails[i * 4 + 2] = ix; tails[i * 4 + 3] = iy
         }
-        if (first) repeat(170) {
+        if (first) repeat(320) {
             val u = Random.nextFloat() * 1.8f - 0.9f; val v = Random.nextFloat() * 1.8f - 0.9f
             if (u * u + v * v < 0.8f) ribos.add(Ribo(cx + u * a, cy + v * b))
         }
     }
+
+    private var scopeOn = true
+    override fun configure(prefs: SharedPreferences) { scopeOn = prefs.getBoolean("scope", true) }
 
     override fun touchDown(px: Float, py: Float) {
         if (overlay.isOpen) { overlay.close(); consumed = true; return }
@@ -141,8 +145,8 @@ class EukaryoteScene(private val d: Float) : Scene {
         with(kit) {
             // Microtúbulos desde el centrosoma
             stroke(col(0x22FFC24DL), 1.2f * d)
-            for (i in 0 until 12) {
-                val an = i * TAU / 12f + 0.3f
+            for (i in 0 until 22) {
+                val an = i * TAU / 22f + 0.3f
                 val len = (120f + 90f * (0.5f + 0.5f * sin(time * 0.5f + i * 1.7f))) * d
                 line(ex, ey, ex + cos(an) * len, ey + sin(an) * len)
             }
@@ -157,8 +161,8 @@ class EukaryoteScene(private val d: Float) : Scene {
             for (m in lysos) Sprites.draw(canvas, "lyso", mx(m), my(m), 32f * d)
             Sprites.draw(canvas, "centriole", ex, ey, 74f * d, sin(time * 0.2f) * 8f)
             // Vesículas del Golgi hacia la membrana
-            for (i in 0 until 5) {
-                val f = ((time * 0.12f + i / 5f) % 1f)
+            for (i in 0 until 9) {
+                val f = ((time * 0.12f + i / 9f) % 1f)
                 val vx = gx + (a * 0.96f - (gx - cx)) * f * 0.9f
                 val vy = gy + (b * 0.35f) * f
                 Sprites.draw(canvas, "lyso", vx, vy, 14f * d * (1f - f * 0.4f))
@@ -166,6 +170,7 @@ class EukaryoteScene(private val d: Float) : Scene {
             for (r in ribos) Sprites.draw(canvas, "ribo", r.x, r.y, 10f * d)
             if (!overlay.isOpen && time < 12f) text("Toca un orgánulo para verlo en detalle", w / 2, h * 0.93f, 13f * d, col(0x88FFFFFFL))
         }
+        if (scopeOn) Sprites.scope(canvas, w, h, time, d)
         overlay.draw(canvas, w, h)
     }
 }

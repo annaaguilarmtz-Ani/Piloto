@@ -2,7 +2,7 @@
 const fs = require('fs');
 const { chromium } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const OUT = __dirname + '/../../app/src/main/assets/cells';
-const W = 540, H = 1200;
+const W = +process.env.BW || 810, H = +process.env.BH || 1800;
 const frag = `#version 300 es
 precision highp float;
 uniform vec2 uRes; uniform int uMode;
@@ -101,8 +101,25 @@ vec3 blood(vec2 uv){
   col*=1.0-0.35*length(uv-0.5);
   return col;
 }
+vec4 scope(vec2 uv){
+  vec2 q=(uv-0.5)*vec2(1.0,0.62)*2.0; float r=length(q);
+  float vig=smoothstep(0.72,1.25,r)*0.9;
+  float rim=smoothstep(0.02,0.0,abs(r-1.02))*0.10;
+  float grain=(hash(floor(uv*uRes*0.5))-0.5);
+  float a=vig+abs(grain)*0.09;
+  vec3 col=vec3(0.0)+vec3(0.9,0.95,1.0)*max(grain,0.0)*0.9;
+  // polvo y fibras
+  float dust=0.0; for(int i=0;i<40;i++){ float fi=float(i); vec2 c=vec2(hash(vec2(fi,1.0)),hash(vec2(fi,2.0))); float sz=0.0015+0.004*hash(vec2(fi,3.0)); dust=max(dust,smoothstep(sz,sz*0.3,length((uv-c)*vec2(1.0,uRes.y/uRes.x)))*0.35); }
+  for(int i=0;i<8;i++){ float fi=float(i)+50.0; vec2 c=vec2(hash(vec2(fi,1.0)),hash(vec2(fi,2.0))); vec2 d=uv-c; float ang=hash(vec2(fi,4.0))*6.28; d=mat2(cos(ang),-sin(ang),sin(ang),cos(ang))*d; d.y+=0.02*sin(d.x*40.0); float f=smoothstep(0.0012,0.0002,abs(d.y*uRes.y/uRes.x))*smoothstep(0.05,0.03,abs(d.x)); dust=max(dust,f*0.4); }
+  a=clamp(a+dust,0.0,1.0);
+  float glare=exp(-length((uv-vec2(0.22,0.14))*vec2(1.0,0.5))*7.0)*0.10;
+  vec3 c2=mix(col,vec3(1.0,0.97,0.9),glare*3.0+rim*4.0);
+  float aa=clamp(a+glare+rim,0.0,1.0);
+  return vec4(c2*aa,aa);
+}
 void main(){
   vec2 uv=gl_FragCoord.xy/uRes; uv.y=1.0-uv.y;
+  if(uMode==4){ fragColor=scope(uv); return; }
   vec3 c= uMode==0?eukaryote(uv): uMode==1?plant(uv): uMode==2?prokaryote(uv): blood(uv);
   c=pow(clamp(c,0.0,1.0),vec3(0.95));
   fragColor=vec4(c,1.0);
@@ -112,17 +129,17 @@ void main(){
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
   const p = await b.newPage({ viewport: { width: W, height: H } });
   await p.setContent(`<canvas id=c width=${W} height=${H}></canvas>`);
-  const names = ['euk', 'plant', 'prok', 'blood'];
-  for (let m = 0; m < 4; m++) {
+  const names = ['euk', 'plant', 'prok', 'blood', 'scope'];
+  for (let m = 0; m < 5; m++) {
     const url = await p.evaluate(([frag, m, W, H]) => {
-      const c = document.getElementById('c'); const gl = c.getContext('webgl2', { preserveDrawingBuffer: true });
+      const c = document.getElementById('c'); const gl = c.getContext('webgl2', { preserveDrawingBuffer: true, premultipliedAlpha: true });
       const mk = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; };
       const pr = gl.createProgram(); gl.attachShader(pr, mk(gl.VERTEX_SHADER, '#version 300 es\nin vec2 a; void main(){ gl_Position=vec4(a,0.,1.); }')); gl.attachShader(pr, mk(gl.FRAGMENT_SHADER, frag));
       gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr)); gl.useProgram(pr);
       const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
       const loc = gl.getAttribLocation(pr, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
       gl.uniform2f(gl.getUniformLocation(pr, 'uRes'), W, H); gl.uniform1i(gl.getUniformLocation(pr, 'uMode'), m);
-      gl.viewport(0, 0, W, H); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.finish();
+      gl.viewport(0, 0, W, H); gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.finish();
       return c.toDataURL('image/webp', 0.9);
     }, [frag, m, W, H]);
     fs.writeFileSync(`${OUT}/bg_${names[m]}.webp`, Buffer.from(url.split(',')[1], 'base64'));

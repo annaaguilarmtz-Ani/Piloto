@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
+import kotlin.math.cos
+import kotlin.math.sin
 
 /** Imágenes 3D prerenderizadas (assets/cells) de orgánulos, células y fondos. */
 object Sprites {
@@ -28,6 +30,29 @@ object Sprites {
         val b = get(name) ?: return
         r.set(0f, 0f, w, h); paint.alpha = 255
         c.drawBitmap(b, null, r, paint)
+    }
+
+    private val bok = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    /** Efecto de microscopio: discos desenfocados que derivan + viñeta, grano y polvo. */
+    fun scope(c: Canvas, w: Float, h: Float, time: Float, d: Float) {
+        for (i in 0 until 8) {
+            val x = w * (0.5f + 0.48f * sin(time * 0.05f * (1f + i * 0.13f) + i * 2.1f))
+            val y = h * (0.5f + 0.48f * cos(time * 0.04f * (1f + i * 0.17f) + i * 1.3f))
+            val rad = (26f + (i % 4) * 15f) * d
+            bok.style = Paint.Style.FILL; bok.color = 0x0EFFFFF0
+            c.drawCircle(x, y, rad, bok)
+            bok.style = Paint.Style.STROKE; bok.strokeWidth = 1.5f * d; bok.color = 0x18FFFFF0
+            c.drawCircle(x, y, rad, bok)
+        }
+        bg(c, "scope", w, h)
+    }
+
+    /** Dibuja el sprite ajustado a un rectángulo. */
+    fun drawRect(c: Canvas, name: String, l: Float, t: Float, rr: Float, b: Float) {
+        val bm = get(name) ?: return
+        r.set(l, t, rr, b); paint.alpha = 255
+        c.drawBitmap(bm, null, r, paint)
     }
 
     /** Dibuja el sprite centrado en (x, y) con ancho wPx y rotación en grados. */

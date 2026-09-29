@@ -1,5 +1,6 @@
 package com.piloto.particles
 
+import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
@@ -96,6 +97,9 @@ class PlantScene(private val d: Float) : Scene {
         else { s -= wd; floatArrayOf(cl, cb - s, 0f, -1f, 1f, 0f) } } }
     }
 
+    private var scopeOn = true
+    override fun configure(prefs: SharedPreferences) { scopeOn = prefs.getBoolean("scope", true) }
+
     override fun touchDown(px: Float, py: Float) {
         if (overlay.isOpen) { overlay.close(); consumed = true; return }
         consumed = false; touching = true; tx = px; ty = py; tap.down(px, py)
@@ -188,6 +192,7 @@ class PlantScene(private val d: Float) : Scene {
             for (r in ribos) Sprites.draw(canvas, "ribo", r.x, r.y, 10f * d)
             if (!overlay.isOpen && time < 12f) text("Toca un orgánulo para verlo en detalle", w / 2, h * 0.93f, 13f * d, col(0x88FFFFFFL))
         }
+        if (scopeOn) Sprites.scope(canvas, w, h, time, d)
         overlay.draw(canvas, w, h)
     }
 }

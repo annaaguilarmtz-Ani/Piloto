@@ -64,6 +64,7 @@ class MainActivity : Activity() {
     private lateinit var preview: PreviewView
     private lateinit var prefs: SharedPreferences
     private lateinit var heartBox: LinearLayout
+    private lateinit var cellBox: LinearLayout
     private var selected = 0
 
     private val names = intArrayOf(R.string.name_particles, R.string.name_blood, R.string.name_cell, R.string.name_eukaryote, R.string.name_plant, R.string.name_heart)
@@ -155,6 +156,7 @@ class MainActivity : Activity() {
                 selected = i
                 preview.scene = createScene(i)
                 heartBox.visibility = if (i == heartIndex) View.VISIBLE else View.GONE
+                cellBox.visibility = if (i in 1..4) View.VISIBLE else View.GONE
             }
         })
         panel.addView(Button(this).apply {
@@ -168,6 +170,9 @@ class MainActivity : Activity() {
                 )
             }
         })
+        cellBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; visibility = View.GONE }
+        cellBox.addView(check("Efecto microscopio", "scope", true))
+        panel.addView(cellBox)
         panel.addView(heartBox)
         val scroll = ScrollView(this).apply { addView(panel); visibility = View.GONE }
 

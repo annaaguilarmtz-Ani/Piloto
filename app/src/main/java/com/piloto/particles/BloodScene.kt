@@ -1,6 +1,7 @@
 package com.piloto.particles
 
 import android.graphics.Bitmap
+import android.content.SharedPreferences
 import android.graphics.Canvas
 import android.graphics.LinearGradient
 import android.graphics.Matrix
@@ -105,6 +106,9 @@ class BloodScene(private val d: Float) : Scene {
             repeat(3) { bact.add(Bact(rndX(), Random.nextFloat() * h * 0.5f, Random.nextFloat() * 6f)) }
         }
     }
+
+    private var scopeOn = true
+    override fun configure(prefs: SharedPreferences) { scopeOn = prefs.getBoolean("scope", true) }
 
     override fun touchDown(px: Float, py: Float) {
         if (overlay.isOpen) { overlay.close(); consumed = true; return }
@@ -244,6 +248,7 @@ class BloodScene(private val d: Float) : Scene {
             }
         }
         if (!overlay.isOpen && time < 10f) { kit.text("Toca una célula para saber qué es", w / 2, h * 0.95f, 13f * d, col(0x88FFFFFFL)) }
+        if (scopeOn) Sprites.scope(canvas, w, h, time, d)
         overlay.draw(canvas, w, h)
     }
 

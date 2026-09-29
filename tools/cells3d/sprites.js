@@ -203,4 +203,65 @@ vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0
 S.pearl = { w: 128, h: 128, half: 1.0, rot: [0.0, 0.0, 0.0], tint: [0.8, 0.8, 0.9], glsl: `
 float mapD(vec3 q, out float id){ id=1.0; return length(q)-0.8+0.02*fbm(q*6.0); }
 vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.9; sss=0.6; return mix(vec3(0.82,0.86,0.90),vec3(0.95,0.96,0.98),fbm(p*5.0)); }` };
+
+S.membrane = { step: 0.6, exp: 0.78, w: 1200, h: 760, half: 1.25, rot: [0.15, 0.0, 0.0], tint: [0.9, 0.6, 0.2], glsl: `
+const float SP=0.085;
+float lipidLayer(vec3 q, float top, float off, out float id){
+  vec2 c=floor(q.xz/SP+0.5+off); vec2 cc=c-off;
+  vec2 j=(vec2(hash(vec3(c,1.0+top)),hash(vec3(c,2.0+top)))-0.5)*0.03; vec2 pc=cc*SP+j;
+  float wob=hash(vec3(c,3.0))*0.045; float sgn=top>0.0?1.0:-1.0;
+  vec3 hp=vec3(pc.x,sgn*(0.36+wob),pc.y);
+  float head=length(q-hp)-0.041;
+  vec3 e1=vec3(pc.x+0.014,sgn*0.02,pc.y+0.012), e2=vec3(pc.x+0.048,sgn*0.02,pc.y-0.012);
+  float t1=sdC(q,hp+vec3(-0.012,0,0),e1,0.011,0.009), t2=sdC(q,hp+vec3(0.014,0,0),e2,0.011,0.009);
+  id=(head<min(t1,t2))?1.0:2.0; return min(head,min(t1,t2)); }
+// proteínas
+float pump(vec3 p){ // Na+/K+ ATPasa
+  float b=sdC(p,vec3(0,-0.4,0),vec3(0,0.42,0),0.30,0.24);
+  float cy=sdE(p-vec3(0.0,-0.68,0.0),vec3(0.44,0.30,0.40));
+  float ex=sdE(p-vec3(0.0,0.55,0.0),vec3(0.30,0.16,0.28));
+  float be=sdC(p,vec3(0.30,0.0,0.0),vec3(0.30,0.6,0.0),0.09,0.11);
+  float d=smin(smin(b,cy,0.1),smin(ex,be,0.05),0.05);
+  float cav=sdC(p,vec3(0.0,-0.85,0.0),vec3(0.0,0.05,0.0),0.10,0.075);
+  return max(d,-cav); }
+float chan(vec3 p){ float r=0.15+0.5*p.y*p.y; float d=max(length(p.xz)-r,abs(p.y)-0.66)*0.8;
+  return max(d,-(length(p.xz)-0.055)); }
+float sglt(vec3 p){ float b=sdC(p,vec3(0,-0.55,0),vec3(0,0.55,0),0.27,0.27);
+  float l1=sdE(p-vec3(-0.12,0.0,0.0),vec3(0.16,0.62,0.22)); float d=smin(b,sdE(p-vec3(0.0,-0.62,0.0),vec3(0.3,0.2,0.28)),0.08);
+  float cav=sdC(p,vec3(0.02,-0.75,0.0),vec3(0.02,0.62,0.0),0.075,0.075); return max(d,-cav); }
+float aqp(vec3 p){ float d=1e9; for(int i=0;i<4;i++){ vec2 o=vec2(i%2==0?-0.135:0.135,i<2?-0.11:0.11); vec3 pp=p-vec3(o.x,0.0,o.y);
+  float t=max(length(pp.xz)-0.115,abs(pp.y)-0.52); t=max(t,-(length(pp.xz)-0.035)); d=min(d,t); } return d; }
+float glyco(vec3 p, out float sid){ sid=0.0;
+  float rod=sdC(p,vec3(0,0.3,0),vec3(0,0.85,0),0.05,0.045); float d=rod;
+  for(int i=0;i<3;i++){ float fi=float(i); vec3 b=vec3(0.13*(fi-1.0),0.95+0.06*fi,0.05*(fi-1.0)); float s=length(p-b)-0.055; if(s<d){d=s;sid=1.0;} d=min(d,sdC(p,vec3(0,0.82,0),b,0.02,0.02)); }
+  return d; }
+float mapD(vec3 q, out float id){
+  float d=1e9; id=1.0;
+  float pumpX=-1.2, chX=-0.4, sgX=0.42, aqX=1.22, glX=1.75;
+  float dp=pump(q-vec3(pumpX,0.0,0.0)); float dc=chan(q-vec3(chX,0.0,0.0)); float ds=sglt(q-vec3(sgX,0.0,0.0)); float da=aqp(q-vec3(aqX,0.0,0.0));
+  float gid; float dg=glyco(q-vec3(glX,0.0,0.0),gid);
+  float dprot=min(min(dp,dc),min(ds,da));
+  float idl1,idl2; float l1=lipidLayer(q,1.0,0.0,idl1), l2=lipidLayer(q,-1.0,0.5,idl2);
+  float dl=min(l1,l2); dl=max(dl,-(dprot-0.05));
+  if(dl<d){d=dl;id=(l1<l2?idl1:idl2);}
+  float bump=0.018*(fbm(q*5.0)-0.5);
+  dp+=bump; dc+=bump; ds+=bump; da+=bump*0.5;
+  if(dp<d){d=dp;id=3.0;} if(dc<d){d=dc;id=4.0;} if(ds<d){d=ds;id=5.0;} if(da<d){d=da;id=6.0;}
+  if(dg<d){d=dg;id=7.0+gid;}
+  // colesterol
+  vec2 cc=floor(q.xz/0.36+0.5); float hh=hash(vec3(cc,7.0)); vec2 cp=cc*0.36+(vec2(hash(vec3(cc,8.0)),hash(vec3(cc,9.0)))-0.5)*0.1;
+  float sd=(hh>0.55)?sdC(q,vec3(cp.x,-0.28+0.1*hh,cp.y),vec3(cp.x,0.28-0.1*hh,cp.y),0.028,0.024):1e9; sd=max(sd,-(dprot-0.06));
+  if(sd<d){d=sd;id=9.0;}
+  return max(d,q.z-0.02);
+}
+vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ float m=fbm(p*7.0); gloss=0.7; sss=0.5;
+  if(id<1.5) return mix(vec3(0.95,0.72,0.28),vec3(1.0,0.86,0.45),m);
+  if(id<2.5) return mix(vec3(0.80,0.50,0.18),vec3(0.92,0.66,0.30),m);
+  if(id<3.5){ float h=smoothstep(-0.9,0.6,p.y); return mix(vec3(0.38,0.10,0.55),vec3(0.75,0.14,0.36),h)*(0.7+0.5*m); }
+  if(id<4.5) return mix(vec3(0.06,0.38,0.46),vec3(0.14,0.62,0.66),m);
+  if(id<5.5) return mix(vec3(0.14,0.48,0.16),vec3(0.36,0.72,0.26),m);
+  if(id<6.5) return mix(vec3(0.18,0.24,0.68),vec3(0.36,0.44,0.90),m);
+  if(id<7.5) return vec3(0.85,0.30,0.55);
+  if(id<8.5) return vec3(0.98,0.85,0.30);
+  return vec3(0.95,0.45,0.15); }` };
 module.exports = S;
