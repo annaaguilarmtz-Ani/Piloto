@@ -20,6 +20,7 @@ abstract class SceneWallpaperService : WallpaperService() {
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
             scene = createScene(resources.displayMetrics.density)
+            scene.configure(getSharedPreferences(Prefs.NAME, android.content.Context.MODE_PRIVATE))
             setTouchEventsEnabled(true)
         }
 
@@ -32,6 +33,7 @@ abstract class SceneWallpaperService : WallpaperService() {
             this.visible = visible
             Choreographer.getInstance().removeFrameCallback(this)
             if (visible) {
+                scene.configure(getSharedPreferences(Prefs.NAME, android.content.Context.MODE_PRIVATE))
                 lastNanos = 0L
                 Choreographer.getInstance().postFrameCallback(this)
             }

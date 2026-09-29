@@ -17,10 +17,10 @@ import kotlin.random.Random
 class ParticleSystem(private val density: Float) : Scene {
 
     companion object {
-        const val BASE_COUNT = 450
-        const val MAX_COUNT = 1800
-        private const val SPLIT_RADIUS_DP = 55f
-        private const val SPLIT_RATE = 1.6f // divisiones por segundo por partícula tocada
+        const val BASE_COUNT = 550
+        const val MAX_COUNT = 3500
+        private const val SPLIT_RADIUS_DP = 85f
+        private const val SPLIT_RATE = 6f // divisiones por segundo por partícula tocada
     }
 
     private val x = FloatArray(MAX_COUNT)
@@ -41,6 +41,7 @@ class ParticleSystem(private val density: Float) : Scene {
     private var tx = 0f
     private var ty = 0f
     private var burst = false
+    private var release = false
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val hsv = floatArrayOf(0f, 0.85f, 1f)
@@ -61,6 +62,7 @@ class ParticleSystem(private val density: Float) : Scene {
     }
 
     override fun touchUp() {
+        if (touching) release = true
         touching = false
     }
 
@@ -69,7 +71,7 @@ class ParticleSystem(private val density: Float) : Scene {
         val i = count++
         x[i] = px; y[i] = py
         val a = Random.nextFloat() * (2 * PI).toFloat()
-        val s = (10f + Random.nextFloat() * 25f) * density
+        val s = (15f + Random.nextFloat() * 60f) * density
         vx[i] = kotlin.math.cos(a) * s
         vy[i] = sin(a) * s
         size[i] = (0.45f + Random.nextFloat() * 0.65f) * density // radio ~0.5–1.1 dp
@@ -106,7 +108,7 @@ class ParticleSystem(private val density: Float) : Scene {
                 ax += sin(t * 1.3f + i) * 14f * density
                 ay += kotlin.math.cos(t * 1.1f + i * 0.7f) * 14f * density
             }
-            val damp = if (touching) 2.4f else 0.7f
+            val damp = if (touching) 2.4f else 0.5f
             vx[i] += (ax - vx[i] * damp) * dt
             vy[i] += (ay - vy[i] * damp) * dt
             x[i] += vx[i] * dt
@@ -120,15 +122,33 @@ class ParticleSystem(private val density: Float) : Scene {
         if (touching) {
             val r = SPLIT_RADIUS_DP * density
             val r2 = r * r
-            val chance = if (burst) 0.8f else SPLIT_RATE * dt
+            val chance = if (burst) 1f else SPLIT_RATE * dt
+            val kids = if (burst) 2 else 1
             for (i in 0 until n) {
                 val dx = tx - x[i]
                 val dy = ty - y[i]
                 if (dx * dx + dy * dy < r2 && Random.nextFloat() < chance) {
-                    spawn(x[i], y[i], 14f + Random.nextFloat() * 10f, (hue[i] + Random.nextFloat() * 50f - 25f + 360f) % 360f)
+                    repeat(kids) { spawn(x[i], y[i], 25f + Random.nextFloat() * 20f, (hue[i] + Random.nextFloat() * 50f - 25f + 360f) % 360f) }
                 }
             }
             burst = false
+        }
+
+        // Al soltar: explosión hacia fuera y nueva división de las que estaban junto al dedo
+        if (release) {
+            release = false
+            val big = 420f * density
+            for (i in 0 until n) {
+                val dx = x[i] - tx; val dy = y[i] - ty
+                val dist = max(sqrt(dx * dx + dy * dy), 1f)
+                if (dist < big) {
+                    val f = 1f - dist / big
+                    val sp = (250f + 650f * f) * density * (0.5f + Random.nextFloat() * 0.5f)
+                    vx[i] += dx / dist * sp; vy[i] += dy / dist * sp
+                    if (dist < 110f * density && Random.nextFloat() < 0.6f)
+                        spawn(x[i], y[i], 25f + Random.nextFloat() * 20f, (hue[i] + Random.nextFloat() * 50f - 25f + 360f) % 360f)
+                }
+            }
         }
 
         // Caducidad de las hijas

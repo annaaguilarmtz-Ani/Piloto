@@ -8,4 +8,13 @@
     <string name="name_particles">Partículas</string>
     <string name="name_blood">Torrente sanguíneo</string>
     <string name="name_cell">Célula procariota</string>
+    <string name="description_eukaryote">Interior de una célula eucariota: toca cada orgánulo para ver cómo trabaja</string>
+    <string name="name_eukaryote">Célula eucariota</string>
+    <string name="description_heart">Corazón en corte sagital, coronal o axial con válvulas, flujo y conducción eléctrica</string>
+    <string name="name_heart">Corazón</string>
+    <string name="heart_plane">Plano de corte</string>
+    <string name="heart_bpm">Frecuencia</string>
+    <string name="heart_speed">Velocidad</string>
+    <string name="heart_labels">Etiquetas</string>
+    <string name="heart_cond">Conducción eléctrica</string>
 </resources>

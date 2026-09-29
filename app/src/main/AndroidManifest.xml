@@ -57,5 +57,31 @@
                 android:name="android.service.wallpaper"
                 android:resource="@xml/wallpaper_cell" />
         </service>
+
+        <service
+            android:name=".EukaryoteWallpaperService"
+            android:exported="true"
+            android:label="@string/name_eukaryote"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper_eukaryote" />
+        </service>
+
+        <service
+            android:name=".HeartWallpaperService"
+            android:exported="true"
+            android:label="@string/name_heart"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper_heart" />
+        </service>
     </application>
 </manifest>

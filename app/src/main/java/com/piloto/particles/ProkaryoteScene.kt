@@ -48,6 +48,10 @@ class ProkaryoteScene(private val d: Float) : Scene {
     private var cytoPaint: Paint? = null
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val kit = Kit(d)
+    private val overlay = Overlay(kit)
+    private val tap = TapDetector(12f * d)
+    private var consumed = false
     private val rect = RectF()
     private val path = Path()
 
@@ -87,11 +91,47 @@ class ProkaryoteScene(private val d: Float) : Scene {
         }
     }
 
-    override fun touchDown(px: Float, py: Float) { touching = true; tx = px; ty = py }
-    override fun touchMove(px: Float, py: Float) { tx = px; ty = py }
-    override fun touchUp() { touching = false }
+    override fun touchDown(px: Float, py: Float) {
+        if (overlay.isOpen) { overlay.close(); consumed = true; return }
+        consumed = false; touching = true; tx = px; ty = py; tap.down(px, py)
+    }
+    override fun touchMove(px: Float, py: Float) { if (consumed) return; tx = px; ty = py; tap.move(px, py) }
+    override fun touchUp() {
+        touching = false
+        if (!consumed && tap.up()) hit(tx, ty)?.let { overlay.open(it) }
+    }
+
+    private fun plasmidPos(k: Int, out: FloatArray) {
+        val t = time * (0.16f + 0.07f * k) + k * 3.1f
+        out[0] = cx + a * 0.62f * cos(t) * (if (k == 0) 1f else -1f)
+        out[1] = cy + b * 0.55f * sin(t * 1.3f + k)
+    }
+
+    /** Qué orgánulo hay bajo el dedo (los más pequeños tienen prioridad). */
+    private fun hit(x: Float, y: Float): Info? {
+        for (r in ribos) { val dx = x - r.x; val dy = y - r.y; if (dx * dx + dy * dy < 196f * d * d) return CellDetails.ribosome(true) }
+        val pp = FloatArray(2)
+        for (k in 0..1) { plasmidPos(k, pp); val dx = x - pp[0]; val dy = y - pp[1]; if (dx * dx + dy * dy < 400f * d * d) return CellDetails.plasmid }
+        for (g in granules) {
+            val gx = cx + a * (g.u + 0.05f * sin(time * 0.3f + g.ph)); val gy = cy + b * (g.v + 0.05f * cos(time * 0.25f + g.ph))
+            val dx = x - gx; val dy = y - gy; val rr = g.r + 10f * d
+            if (dx * dx + dy * dy < rr * rr) return CellDetails.granule
+        }
+        for (m in motors) { val dx = x - m.x; val dy = y - m.y; if (dx * dx + dy * dy < 400f * d * d) return CellDetails.respiration }
+        val by = cy + b
+        if (y > by - 4f * d && kotlin.math.abs(x - cx) < 45f * d) return CellDetails.flagellum
+        val u = (x - cx) / a; val v = (y - cy) / b
+        val e = (sqrt(u * u + v * v) - 1f) * min(a, b)
+        if (e in (-14f * d)..(-3f * d)) return CellDetails.respiration
+        if (e in (-3f * d)..(16f * d)) return CellDetails.wall
+        if (e in (16f * d)..(46f * d)) return CellDetails.pili
+        val nu = (x - cx) / (a * 0.5f); val nv = (y - cy + b * 0.04f) / (b * 0.33f)
+        if (nu * nu + nv * nv < 1f) return CellDetails.nucleoid
+        return null
+    }
 
     override fun update(dt: Float) {
+        overlay.update(dt)
         if (w == 0f) return
         val t = min(dt, 0.05f)
         time += t
@@ -274,5 +314,11 @@ class ProkaryoteScene(private val d: Float) : Scene {
             val an = time * 9f + i * 2.094f
             canvas.drawLine(cx, by, cx + cos(an) * 7f * d, by + sin(an) * 7f * d, paint)
         }
+
+        if (!overlay.isOpen && time < 12f) {
+            kit.cv = canvas
+            kit.text("Toca un orgánulo para verlo en detalle", w / 2, h * 0.93f, 13f * d, col(0x88FFFFFFL))
+        }
+        overlay.draw(canvas, w, h)
     }
 }
