@@ -83,5 +83,18 @@
                 android:name="android.service.wallpaper"
                 android:resource="@xml/wallpaper_heart" />
         </service>
+
+        <service
+            android:name=".PlantWallpaperService"
+            android:exported="true"
+            android:label="@string/name_plant"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper_plant" />
+        </service>
     </application>
 </manifest>

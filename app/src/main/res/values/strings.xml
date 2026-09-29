@@ -17,4 +17,6 @@
     <string name="heart_speed">Velocidad</string>
     <string name="heart_labels">Etiquetas</string>
     <string name="heart_cond">Conducción eléctrica</string>
+    <string name="description_plant">Interior de una célula vegetal: toca cada orgánulo para ver cómo trabaja</string>
+    <string name="name_plant">Célula vegetal</string>
 </resources>

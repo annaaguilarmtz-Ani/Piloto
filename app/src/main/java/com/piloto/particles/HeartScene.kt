@@ -48,9 +48,9 @@ class HeartScene(private val d: Float) : Scene {
     )
 
     companion object {
-        val PLANES = arrayOf("Sagital", "Coronal (frontal)", "Axial 4 cámaras", "Axial grandes vasos")
-        private val RES = intArrayOf(R.raw.heart_sagittal, R.raw.heart_coronal, R.raw.heart_axial4, R.raw.heart_axialhigh)
-        private val cache = arrayOfNulls<Art>(4)
+        val PLANES = arrayOf("Sagital", "Coronal (frontal)", "Axial 4 cámaras", "Axial grandes vasos", "Vista exterior")
+        private val RES = intArrayOf(R.raw.heart_sagittal, R.raw.heart_coronal, R.raw.heart_axial4, R.raw.heart_axialhigh, R.raw.heart_exterior)
+        private val cache = arrayOfNulls<Art>(5)
         private fun fr(x: Float) = x - floor(x)
 
         private fun farr(a: JSONArray?): FloatArray { if (a == null) return FloatArray(0); return FloatArray(a.length()) { a.getDouble(it).toFloat() } }
@@ -143,7 +143,7 @@ class HeartScene(private val d: Float) : Scene {
     private var consumed = false
     private var w = 0f; private var h = 0f
     private var s = 1f; private var ox = 0f; private var oy = 0f
-    private var plane = 1
+    private var plane = 4
     private var art: Art? = null
     private var bpm = 72f
     private var speed = 1f
@@ -163,7 +163,7 @@ class HeartScene(private val d: Float) : Scene {
         speed = prefs.getInt("heart_speed", 100) / 100f
         showLabels = prefs.getBoolean("heart_labels", true)
         showCond = prefs.getBoolean("heart_cond", true)
-        val p = prefs.getInt("heart_plane", 1).coerceIn(0, 3)
+        val p = prefs.getInt("heart_plane", 4).coerceIn(0, 4)
         if (p != plane || art == null) setPlane(p)
     }
 

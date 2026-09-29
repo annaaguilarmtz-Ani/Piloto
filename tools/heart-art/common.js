@@ -3,7 +3,7 @@ const { spline, inner, tubePoly, C, lin, rad, rnd, r2 } = L;
 
 // Paleta
 const P = {
-  wall: ['#B5504F', '#8E2F33', '#5A171D'],
+  wall: ['#B04A4A', '#7E2229', '#45101A'],
   oxy: ['#D2343E', '#9C1B26', '#560A12'],
   deoxy: ['#5A70CC', '#34479A', '#161F55'],
   art: '#C46A70', vein: '#7C7AB8', artD: '#8F3E46', veinD: '#4E4C8C'

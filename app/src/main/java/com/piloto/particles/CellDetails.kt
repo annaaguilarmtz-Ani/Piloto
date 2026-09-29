@@ -593,4 +593,113 @@ object CellDetails {
         label("Citoplasma", 60f, 225f, L)
         text("e⁻ →", 20f, 96f, L, GOLD, Paint.Align.LEFT)
     } }
+
+    // ---------------- Vegetal ----------------
+
+    val chloroplast = Info(
+        "Cloroplasto",
+        "Es donde la planta hace la fotosíntesis. En las membranas de los tilacoides (apilados en grana) la clorofila capta la luz, rompe el agua y libera oxígeno; " +
+            "la energía se guarda en ATP y NADPH gracias a un flujo de protones a través de la ATP sintasa. En el estroma, el ciclo de Calvin usa ese ATP y NADPH para fijar el CO₂ " +
+            "y construir azúcares, que se guardan como almidón. Tiene doble membrana, ADN y ribosomas propios, como la mitocondria."
+    ) { k, t -> with(k) {
+        fill(col(0xFF12361EL)); oval(15f, 40f, 285f, 200f)
+        stroke(col(0xFF5FBF6AL), 3f); oval(15f, 40f, 285f, 200f)
+        stroke(col(0xFF8FE09AL), 1.5f); oval(22f, 47f, 278f, 193f)
+        for (g in 0..3) {
+            val gx = 62f + g * 50f; val gy = 92f + (g % 2) * 28f
+            for (q in 0..4) {
+                fill(col(0xFF3E9E4EL)); oval(gx - 18f, gy + q * 7f, gx + 18f, gy + q * 7f + 5f)
+                fill(CYAN and 0x00FFFFFF or (0x88 shl 24)); circle(gx - 8f + sin(t * 2f + q + g) * 6f, gy + q * 7f + 2.5f, 1.6f)
+            }
+            if (g < 3) { stroke(col(0x885FBF6AL), 1.2f); line(gx + 18f, gy + 14f, gx + 32f, gy + 14f + ((g + 1) % 2 * 2 - 1) * -14f) }
+            val f = fr(t * 0.3f + g * 0.25f)
+            stroke(col(0xCCFFFFFFL), 1.2f); circle(gx + 10f + sin(t * 3f + g) * 4f, gy - f * 55f, 3f)
+        }
+        for (i in 0..5) {
+            val f = fr(t * 0.5f + i / 6f)
+            fill((1f - f * f).let { (it * 255).toInt().shl(24) or 0xFFE066 }); circle(30f + i * 42f + f * 22f, 6f + f * 90f, 3.5f)
+        }
+        stroke(col(0xFFFF9A3CL), 3f)
+        curve(40) { u, o -> val a = u * 5.2f - 0.6f; o[0] = 218f + cos(a) * 26f; o[1] = 152f + sin(a) * 26f }
+        drawPath()
+        val q = onPath(fr(t * 0.2f))
+        fill(GOLD); circle(q[0], q[1], 4f)
+        for (i in 0..2) { val f = fr(t * 0.25f + i / 3f); fill(col(0xFFB8C4CCL)); circle(292f - f * 55f, 196f - f * 30f, 3f) }
+        fill(col(0xFFFFE8A0L)); val e = fr(t * 0.2f + 0.5f); circle(240f + e * 30f, 130f - e * 50f, 3.5f)
+        fill(col(0xFFEDEDE0L)); oval(235f, 70f, 262f, 84f)
+        label("Membrana doble", 150f, 32f, L)
+        label("Grana (tilacoides con clorofila)", 100f, 226f, L)
+        label("Luz", 25f, 30f, L)
+        label("O₂", 60f, 78f, L)
+        label("Ciclo de Calvin", 218f, 118f, L)
+        label("CO₂ →", 262f, 224f, L)
+        label("Almidón", 250f, 62f, L)
+    } }
+
+    val vacuole = Info(
+        "Vacuola central",
+        "Ocupa hasta el 90 % de la célula vegetal. Almacena agua, azúcares, iones, pigmentos (como las antocianinas, que dan el color a pétalos y frutos) y desechos. " +
+            "El agua entra por ósmosis a través de acuaporinas del tonoplasto y la vacuola empuja el citoplasma contra la pared: es la presión de turgencia, que mantiene rígida la planta. " +
+            "Si falta agua, la vacuola se encoge y la planta se marchita."
+    ) { k, t -> with(k) {
+        val ph = 0.5f + 0.5f * sin(t * 0.8f)
+        val rx = 95f + 30f * ph; val ry = 70f + 30f * ph
+        fill(col(0xFF1F4A36L)); rrect(20f, 20f, 280f, 220f, 40f)
+        stroke(col(0xFF7A9A3CL), 8f); rrect(20f, 20f, 280f, 220f, 40f)
+        fill(col(0xFF1E5E7EL)); oval(150f - rx, 120f - ry, 150f + rx, 120f + ry)
+        stroke(col(0xFF7FC4E0L), 2.5f); oval(150f - rx, 120f - ry, 150f + rx, 120f + ry)
+        for (i in 0 until 6) {
+            val a = i * TAU / 6f + 0.3f
+            val px = 150f + cos(a) * rx; val py = 120f + sin(a) * ry
+            fill(col(0xFF3FA37AL)); circle(px, py, 4f)
+            val f = fr(t * 0.4f + i * 0.17f)
+            val dir = if (cos(t * 0.8f) > 0f) 1f else -1f
+            fill(col(0xFF9AE0FFL)); circle(px + cos(a) * (14f - 28f * f * dir), py + sin(a) * (14f - 28f * f * dir), 2.4f)
+        }
+        for (i in 0 until 10) {
+            fill(if (i % 3 == 0) col(0xFFB05AD8L) else col(0xFFE8D06AL))
+            circle(150f + cos(i * 2.1f + t * 0.2f) * rx * 0.55f, 120f + sin(i * 1.7f + t * 0.25f) * ry * 0.5f, if (i % 3 == 0) 6f else 2.6f)
+        }
+        stroke(col(0xFFFFC857L), 2.5f)
+        val push = 8f + 8f * ph
+        line(150f, 120f - ry - 2f, 150f, 120f - ry - push); line(150f, 120f + ry + 2f, 150f, 120f + ry + push)
+        label("Tonoplasto con acuaporinas", 150f, 14f, L)
+        label("Agua (ósmosis)", 232f, 232f, L)
+        label("Pigmentos y azúcares", 150f, 122f, L)
+        label(if (cos(t * 0.8f) > 0f) "Turgente" else "Perdiendo agua", 55f, 232f, L)
+        label("Pared celular", 42f, 40f, L)
+    } }
+
+    val plantWall = Info(
+        "Pared celular y plasmodesmos",
+        "Rodea la célula vegetal y le da forma y resistencia. Está hecha de microfibrillas de celulosa entrecruzadas con hemicelulosa y pectina; entre células vecinas hay una lámina media de pectina que las pega. " +
+            "Los plasmodesmos son túneles que atraviesan la pared y unen los citoplasmas de células contiguas: por ellos pasan agua, azúcares, señales y hasta ARN."
+    ) { k, t -> with(k) {
+        fill(col(0xFF1F4A36L)); rect.set(0f, 0f, 120f, 240f); cv.drawRect(rect, p)
+        rect.set(180f, 0f, 300f, 240f); cv.drawRect(rect, p)
+        fill(col(0xFFE8E0A0L)); rect.set(147f, 0f, 153f, 240f); cv.drawRect(rect, p)
+        for (side in 0..1) {
+            val x0 = if (side == 0) 122f else 156f
+            fill(col(0xFF7A9A3CL)); rect.set(x0, 0f, x0 + 22f, 240f); cv.drawRect(rect, p)
+            stroke(col(0xFFD4EC8AL), 1.6f)
+            for (i in 0 until 24) {
+                val y = i * 10f
+                if (i % 2 == 0) line(x0 + 1f, y, x0 + 21f, y + 6f) else line(x0 + 1f, y + 6f, x0 + 21f, y)
+                line(x0 + 4f, y + 4f, x0 + 4f, y + 9f)
+            }
+        }
+        fill(col(0xFF1F4A36L)); rect.set(122f, 108f, 178f, 132f); cv.drawRect(rect, p)
+        stroke(col(0xFFE0B45AL), 2f); line(122f, 108f, 178f, 108f); line(122f, 132f, 178f, 132f)
+        stroke(col(0xFF4FB0C0L), 5f); line(100f, 120f, 200f, 120f)
+        stroke(col(0xFF17434DL), 2f); line(100f, 120f, 200f, 120f)
+        for (i in 0..4) {
+            val f = fr(t * 0.25f + i / 5f)
+            fill(if (i % 2 == 0) GOLD else CYAN); circle(60f + f * 180f, 100f + (i % 3) * 6f, 3.4f)
+        }
+        label("Célula A", 60f, 24f, L); label("Célula B", 240f, 24f, L)
+        label("Pared primaria (celulosa)", 150f, 226f, L)
+        label("Lámina media (pectina)", 150f, 14f, L)
+        label("Plasmodesmo", 150f, 92f, L)
+        label("Azúcares, agua, señales", 150f, 160f, L)
+    } }
 }
