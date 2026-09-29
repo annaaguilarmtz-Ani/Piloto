@@ -31,5 +31,31 @@
                 android:name="android.service.wallpaper"
                 android:resource="@xml/wallpaper" />
         </service>
+
+        <service
+            android:name=".BloodWallpaperService"
+            android:exported="true"
+            android:label="@string/name_blood"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper_blood" />
+        </service>
+
+        <service
+            android:name=".CellWallpaperService"
+            android:exported="true"
+            android:label="@string/name_cell"
+            android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.wallpaper"
+                android:resource="@xml/wallpaper_cell" />
+        </service>
     </application>
 </manifest>

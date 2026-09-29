@@ -1,5 +1,13 @@
 # Piloto – Fondo de pantalla interactivo de partículas (Android)
 
+Tres fondos animados (live wallpapers):
+1. **Partículas** – ver abajo.
+2. **Torrente sanguíneo** – glóbulos rojos (discos que voltean), blancos (núcleo lobulado), plaquetas y plasma; flujo más rápido en el centro; al tocar, las células se apartan.
+3. **Célula procariota** – bacteria con cápsula, pared, membrana, nucleoide (ADN), plásmidos, ribosomas que traducen, gránulos, ATP sintasas + protones que producen ATP, pili y flagelo con motor; al tocar, los ribosomas se apartan.
+
+En la app eliges cuál previsualizar y establecer.
+
+## Partículas
 Live wallpaper: fondo negro, cientos de partículas diminutas multicolor en suspensión.
 - Al tocar la pantalla, las partículas acuden a tu dedo y giran a su alrededor.
 - Las partículas cercanas al dedo se dividen y multiplican (las nuevas desaparecen suavemente a los ~15–25 s).

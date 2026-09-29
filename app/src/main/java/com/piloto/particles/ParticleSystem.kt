@@ -14,7 +14,7 @@ import kotlin.random.Random
  * Simulación de partículas diminutas y multicolor.
  * Las partículas base son permanentes; las "hijas" (creadas al tocar) viven unos segundos.
  */
-class ParticleSystem(private val density: Float) {
+class ParticleSystem(private val density: Float) : Scene {
 
     companion object {
         const val BASE_COUNT = 450
@@ -45,22 +45,22 @@ class ParticleSystem(private val density: Float) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val hsv = floatArrayOf(0f, 0.85f, 1f)
 
-    fun resize(width: Int, height: Int) {
+    override fun resize(width: Int, height: Int) {
         val first = w == 0f
         w = width.toFloat()
         h = height.toFloat()
         if (first) repeat(BASE_COUNT) { spawn(Random.nextFloat() * w, Random.nextFloat() * h, -1f) }
     }
 
-    fun touchDown(px: Float, py: Float) {
+    override fun touchDown(px: Float, py: Float) {
         touching = true; tx = px; ty = py; burst = true
     }
 
-    fun touchMove(px: Float, py: Float) {
+    override fun touchMove(px: Float, py: Float) {
         tx = px; ty = py
     }
 
-    fun touchUp() {
+    override fun touchUp() {
         touching = false
     }
 
@@ -78,7 +78,7 @@ class ParticleSystem(private val density: Float) {
         life[i] = lifeSec
     }
 
-    fun update(dtRaw: Float) {
+    override fun update(dtRaw: Float) {
         if (w == 0f) return
         val dt = min(dtRaw, 0.05f)
         time += dt
@@ -149,7 +149,7 @@ class ParticleSystem(private val density: Float) {
         size[i] = size[last]; hue[i] = hue[last]; phase[i] = phase[last]; life[i] = life[last]
     }
 
-    fun draw(canvas: Canvas) {
+    override fun draw(canvas: Canvas) {
         canvas.drawColor(Color.BLACK)
         for (i in 0 until count) {
             hsv[0] = hue[i]
