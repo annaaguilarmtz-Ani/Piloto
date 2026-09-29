@@ -2,7 +2,7 @@
 const fs = require('fs');
 const out = __dirname + '/../../app/src/main/res/raw';
 fs.mkdirSync(out, { recursive: true });
-const planes = { heart_sagittal: './sagittal', heart_coronal: './coronal', heart_axial4: './axial4', heart_axialhigh: './axialhigh', heart_exterior: './exterior' };
+const planes = { heart_sagittal: './sagittal', heart_coronal: './coronal', heart_axial4: './axial4', heart_axialhigh: './axialhigh' };
 for (const [name, mod] of Object.entries(planes)) {
   const j = require(mod)().json();
   fs.writeFileSync(`${out}/${name}.json`, j);

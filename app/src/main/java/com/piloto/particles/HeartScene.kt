@@ -1,7 +1,10 @@
 package com.piloto.particles
 
 import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.RectF
 import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
@@ -49,7 +52,7 @@ class HeartScene(private val d: Float) : Scene {
 
     companion object {
         val PLANES = arrayOf("Sagital", "Coronal (frontal)", "Axial 4 cámaras", "Axial grandes vasos", "Vista exterior")
-        private val RES = intArrayOf(R.raw.heart_sagittal, R.raw.heart_coronal, R.raw.heart_axial4, R.raw.heart_axialhigh, R.raw.heart_exterior)
+        private val RES = intArrayOf(R.raw.heart_sagittal, R.raw.heart_coronal, R.raw.heart_axial4, R.raw.heart_axialhigh)
         private val cache = arrayOfNulls<Art>(5)
         private fun fr(x: Float) = x - floor(x)
 
@@ -81,7 +84,10 @@ class HeartScene(private val d: Float) : Scene {
             if (close) p.close(); return p
         }
 
+        private val EMPTY = Art(emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), emptyList())
+
         private fun load(plane: Int): Art {
+            if (plane >= RES.size) return EMPTY
             cache[plane]?.let { return it }
             val text = AppCtx.ctx.resources.openRawResource(RES[plane]).bufferedReader().use { it.readText() }
             val j = JSONObject(text)
@@ -158,6 +164,47 @@ class HeartScene(private val d: Float) : Scene {
     private var tx = 0f; private var ty = 0f
     private val glow = Paint(Paint.ANTI_ALIAS_FLAG)
 
+    // ----- Vista exterior: fotogramas prerenderizados (giros x fases del latido) -----
+    private class Spot(val key: String, val cx: Float, val cy: Float, val rx: Float, val ry: Float)
+    private val spots = listOf(
+        Spot("Arteria coronaria", 0.32f, 0.53f, 0.035f, 0.13f), Spot("Arteria coronaria", 0.55f, 0.63f, 0.03f, 0.15f),
+        Spot("Vena cava superior", 0.305f, 0.17f, 0.06f, 0.13f), Spot("Aorta", 0.62f, 0.13f, 0.11f, 0.07f), Spot("Aorta", 0.64f, 0.235f, 0.12f, 0.05f),
+        Spot("Tronco pulmonar", 0.66f, 0.33f, 0.14f, 0.05f), Spot("Aurícula derecha", 0.40f, 0.385f, 0.09f, 0.06f), Spot("Aurícula izquierda", 0.74f, 0.42f, 0.06f, 0.06f),
+        Spot("Ventrículo derecho", 0.40f, 0.62f, 0.13f, 0.15f), Spot("Ventrículo izquierdo", 0.66f, 0.68f, 0.17f, 0.17f)
+    )
+    private class ExtLab(val key: String, val text: String, val x: Float, val y: Float, val left: Boolean)
+    private val extLabels = listOf(
+        ExtLab("Vena cava superior", "V. cava superior", 0.305f, 0.15f, true), ExtLab("Aurícula derecha", "Orejuela derecha", 0.38f, 0.385f, true),
+        ExtLab("Arteria coronaria", "A. coronaria derecha", 0.31f, 0.54f, true), ExtLab("Ventrículo derecho", "Ventrículo derecho", 0.38f, 0.68f, true),
+        ExtLab("Aorta", "Arco aórtico", 0.66f, 0.23f, false), ExtLab("Tronco pulmonar", "Tronco pulmonar", 0.72f, 0.33f, false),
+        ExtLab("Aurícula izquierda", "Orejuela izquierda", 0.75f, 0.43f, false), ExtLab("Arteria coronaria", "A. descendente anterior", 0.55f, 0.72f, false),
+        ExtLab("Ventrículo izquierdo", "Ventrículo izquierdo", 0.70f, 0.78f, false)
+    )
+    private var yawF = 0f
+    private var dragging = false
+    private var lastX = 0f
+    private val dst = RectF()
+    private val bpA = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val bpB = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val extCache = object : LinkedHashMap<Int, Array<Bitmap?>>(4, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Array<Bitmap?>>?) = size > 2
+    }
+    private fun extFrames(idx: Int): Array<Bitmap?> = extCache.getOrPut(idx) {
+        Array(16) { f ->
+            try {
+                AppCtx.ctx.assets.open("heart3d/y${idx}_f$f.webp").use {
+                    BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 })
+                }
+            } catch (e: Exception) { null }
+        }
+    }
+    private fun extRect() {
+        val top = 62f * d; val availH = h - top - 10f * d
+        val sc = min(w / 640f, availH / 711f)
+        val dw = 640f * sc; val dh = 711f * sc
+        dst.set((w - dw) / 2f, top + (availH - dh) / 2f, (w - dw) / 2f + dw, top + (availH - dh) / 2f + dh)
+    }
+
     override fun configure(prefs: SharedPreferences) {
         bpm = prefs.getInt("heart_bpm", 72).toFloat().coerceIn(30f, 200f)
         speed = prefs.getInt("heart_speed", 100) / 100f
@@ -171,6 +218,7 @@ class HeartScene(private val d: Float) : Scene {
         plane = p
         val a = load(p)
         art = a
+        yawF = 0f
         parts.clear()
         for ((i, r) in a.routes.withIndex()) repeat(22) { parts.add(Part(i, Random.nextFloat() * r.total, (Random.nextFloat() - 0.5f) * 2.2f, 0.8f + Random.nextFloat() * 0.4f)) }
         for (v in a.valves) v.open = 0f
@@ -189,10 +237,14 @@ class HeartScene(private val d: Float) : Scene {
     // ---------- Interacción ----------
     override fun touchDown(px: Float, py: Float) {
         if (overlay.isOpen) { overlay.close(); consumed = true; return }
-        consumed = false; tx = px; ty = py; tap.down(px, py)
+        consumed = false; tx = px; ty = py; tap.down(px, py); dragging = true; lastX = px
     }
-    override fun touchMove(px: Float, py: Float) { if (!consumed) tap.move(px, py) }
-    override fun touchUp() { if (!consumed && tap.up()) hit(tx, ty)?.let { overlay.open(it) } }
+    override fun touchMove(px: Float, py: Float) {
+        if (consumed) return
+        tap.move(px, py)
+        if (plane == 4) { yawF = (yawF + (px - lastX) / (w * 0.22f)).coerceIn(-2f, 2f); lastX = px }
+    }
+    override fun touchUp() { dragging = false; if (!consumed && tap.up()) hit(tx, ty)?.let { overlay.open(it) } }
 
     private fun inside(pts: FloatArray, x: Float, y: Float): Boolean {
         var c = false; var j = pts.size / 2 - 1
@@ -205,6 +257,13 @@ class HeartScene(private val d: Float) : Scene {
     }
 
     private fun hit(x: Float, y: Float): Info? {
+        if (plane == 4) {
+            if (Math.round(yawF) != 0) return null
+            extRect()
+            val nx = (x - dst.left) / dst.width(); val ny = (y - dst.top) / dst.height()
+            for (sp in spots) { val dx = (nx - sp.cx) / sp.rx; val dy = (ny - sp.cy) / sp.ry; if (dx * dx + dy * dy < 1f) return HeartInfo.map[sp.key] }
+            return null
+        }
         val a = art ?: return null
         val ux = (x - ox) / s; val uy = (y - oy) / s
         for (n in a.nodes) if (hypot(ux - n.x, uy - n.y) < 4f) return HeartInfo.map[n.key]
@@ -221,6 +280,7 @@ class HeartScene(private val d: Float) : Scene {
         overlay.update(dt)
         val a = art ?: return
         if (w == 0f) return
+        if (!dragging) yawF += (Math.round(yawF) - yawF) * min(1f, dt * 8f)
         val t = min(dt, 0.05f) * speed
         time += t
         beat += t * bpm / 60f
@@ -256,6 +316,14 @@ class HeartScene(private val d: Float) : Scene {
         canvas.drawColor(col(0xFF05070AL))
         val a = art ?: return
         with(kit) {
+            if (plane == 4) {
+                drawExterior(canvas)
+                topStrip(canvas)
+                if (showLabels && Math.round(yawF) == 0) extLabelsDraw(canvas)
+                if (!overlay.isOpen && time < 10f) text("Toca una estructura · desliza para girar", w / 2, h - 6f * d, 11f * d, col(0x77FFFFFFL))
+                overlay.draw(canvas, w, h)
+                return
+            }
             canvas.save(); canvas.translate(ox, oy); canvas.scale(s, s)
             val beatK = 1f - 0.012f * sV
             canvas.scale(beatK, beatK, 50f, 56f)
@@ -270,6 +338,37 @@ class HeartScene(private val d: Float) : Scene {
             if (!overlay.isOpen && time < 10f) text("Toca una estructura para ver su función", w / 2, h - 6f * d, 11f * d, col(0x77FFFFFFL))
         }
         overlay.draw(canvas, w, h)
+    }
+
+    private fun drawExterior(canvas: Canvas) {
+        val idx = (Math.round(yawF) + 2).coerceIn(0, 4)
+        val fs = extFrames(idx)
+        val phF = ph * 16f
+        val a = floor(phF).toInt() and 15; val t = phF - floor(phF); val b = (a + 1) and 15
+        extRect()
+        fs[a]?.let { canvas.drawBitmap(it, null, dst, bpA) }
+        fs[b]?.let { bpB.alpha = (t * 255).toInt(); canvas.drawBitmap(it, null, dst, bpB) }
+    }
+
+    private fun extLabelsDraw(canvas: Canvas) {
+        val size = 9f * d; val margin = 5f * d
+        val p = kit.p
+        for (left in booleanArrayOf(true, false)) {
+            var lastY = -1000f
+            for (l in extLabels.filter { it.left == left }.sortedBy { it.y }) {
+                val ay = dst.top + l.y * dst.height(); val ax = dst.left + l.x * dst.width()
+                var y = ay; if (y < lastY + size * 1.7f) y = lastY + size * 1.7f; lastY = y
+                p.textSize = size
+                val tw = p.measureText(l.text)
+                val tx0 = if (left) margin else w - margin
+                val endX = if (left) tx0 + tw + 2f * d else tx0 - tw - 2f * d
+                kit.stroke(col(0x66FFFFFFL), 0.7f * d); kit.line(endX, y - size * 0.35f, ax, ay)
+                kit.fill(col(0xDDFFFFFFL)); kit.circle(ax, ay, 1.7f * d)
+                p.style = Paint.Style.FILL; p.textSize = size; p.textAlign = if (left) Paint.Align.LEFT else Paint.Align.RIGHT
+                p.setShadowLayer(3f * d, 0f, 0f, col(0xFF000000L)); p.color = col(0xE6FFFFFFL)
+                canvas.drawText(l.text, tx0, y, p); p.clearShadowLayer()
+            }
+        }
     }
 
     private fun drawLayers(canvas: Canvas, a: Art) {
