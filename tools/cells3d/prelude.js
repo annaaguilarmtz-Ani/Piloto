@@ -1,7 +1,7 @@
 // Utilidades GLSL comunes para renderizar orgánulos y células con ray-marching.
 module.exports = `#version 300 es
 precision highp float;
-uniform vec2 uRes; uniform vec3 uRot; uniform float uHalf; uniform float uSeed; uniform vec3 uTint;
+uniform vec2 uRes; uniform vec3 uRot; uniform float uHalf; uniform float uSeed; uniform float uStep; uniform float uExp; uniform vec3 uTint;
 out vec4 fragColor;
 mat2 rot2(float a){float c=cos(a),s=sin(a);return mat2(c,-s,s,c);}
 float hash(vec3 p){ p=fract(p*0.3183099+.1+uSeed*0.013); p*=17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
@@ -58,7 +58,7 @@ void main(){
   for(int i=0;i<160;i++){
     p=ro+rd*t; float dd=mapD(rotAll(p),id); mind=min(mind,dd);
     if(dd<0.0012){hit=true;break;}
-    t+=dd*0.75; if(t>8.0)break;
+    t+=dd*uStep; if(t>8.0)break;
   }
   float px=2.0*2.0*uHalf/uRes.y;
   float alpha=hit?1.0:(1.0-smoothstep(0.0,px*1.2,mind));
@@ -67,7 +67,7 @@ void main(){
   // dirección del rayo en espacio local para reflejos coherentes
   vec3 rdl=rotAll(rd+vec3(0.0)); 
   vec3 col=shade(q,rdl,id);
-  col=aces(col*1.05); col=pow(col,vec3(1.0/2.2));
+  col=aces(col*uExp); col=pow(col,vec3(1.0/2.2));
   fragColor=vec4(col*alpha,alpha);
 }
 `;

@@ -193,12 +193,10 @@ class BloodScene(private val d: Float) : Scene {
     }
 
     private fun drawRbc(canvas: Canvas, e: Ent) {
-        val sp = sprite ?: return
-        val sx = max(0.32f, abs(cos(e.ang)))
-        val sc = e.r / 46f
-        mat.reset(); mat.postTranslate(-48f, -48f); mat.postScale(sc, sc * sx); mat.postRotate(e.phase * 20f); mat.postTranslate(e.x, e.y)
-        bmpPaint.alpha = (if (e.depth < 0.9f) 150 else if (e.depth > 1.2f) 235 else 255)
-        canvas.drawBitmap(sp, mat, bmpPaint)
+        val sx = abs(cos(e.ang))
+        val name = if (sx > 0.9f) "rbc0" else if (sx > 0.7f) "rbc1" else if (sx > 0.5f) "rbc2" else if (sx > 0.3f) "rbc3" else "rbc4"
+        val al = if (e.depth < 0.9f) 150 else if (e.depth > 1.2f) 235 else 255
+        Sprites.draw(canvas, name, e.x, e.y, e.r * 2.3f, e.phase * 40f + time * e.spin * 20f, al)
     }
 
     private fun blobPath(kit: Kit, x: Float, y: Float, r: Float, ph: Float, wob: Float) {
@@ -215,26 +213,9 @@ class BloodScene(private val d: Float) : Scene {
 
     override fun draw(canvas: Canvas) {
         kit.cv = canvas
-        canvas.drawRect(0f, 0f, w, h, bg ?: return)
+        canvas.drawColor(col(0xFF000000L))
+        Sprites.bg(canvas, "bg_blood", w, h)
         with(kit) {
-            // Pared: células endoteliales con núcleo abultado, glucocáliz y músculo liso
-            val period = 84f * d
-            var y = -period + (time * 5f * d) % period
-            while (y < h) {
-                for (side in 0..1) {
-                    val x0 = if (side == 0) wall * 0.10f else w - wall * 0.90f
-                    fill(col(0x66240408L)); oval(x0, y, x0 + wall * 0.8f, y + period * 0.88f)
-                    fill(col(0x88120204L)); oval(x0 + wall * 0.15f, y + period * 0.3f, x0 + wall * 0.65f, y + period * 0.62f)
-                    stroke(col(0x33FFB0A0L), 1f * d)
-                    val gx = if (side == 0) wall * 0.92f else w - wall * 0.92f
-                    for (k in 0..6) { val yy = y + k * period / 7f; line(gx, yy, gx + (if (side == 0) 5f else -5f) * d, yy + 2f * d) }
-                }
-                y += period
-            }
-            stroke(col(0x22000000L), 1.5f * d)
-            var yy = 0f
-            while (yy < h) { line(0f, yy, wall * 0.06f, yy + 6f * d); line(w, yy, w - wall * 0.06f, yy + 6f * d); yy += 18f * d }
-
             // Plasma
             fill(col(0x88E8A890L))
             for (e in dots) circle(e.x, e.y, e.r)
@@ -248,32 +229,20 @@ class BloodScene(private val d: Float) : Scene {
                 line(jx, jy, jx + cos(e.ang + 0.6f) * l, jy + sin(e.ang + 0.6f) * l)
                 line(jx, jy, jx + cos(e.ang - 0.6f) * l, jy + sin(e.ang - 0.6f) * l)
             }
-            // Plaquetas
-            for (e in plt) {
-                cv.save(); cv.rotate(Math.toDegrees(e.ang.toDouble()).toFloat(), e.x, e.y)
-                fill(col(0xFFD9A3D0L)); oval(e.x - e.r * 1.4f, e.y - e.r * 0.8f, e.x + e.r * 1.4f, e.y + e.r * 0.8f)
-                fill(col(0xFF8E4A8AL)); circle(e.x - e.r * 0.4f, e.y, e.r * 0.25f); circle(e.x + e.r * 0.4f, e.y, e.r * 0.25f)
-                cv.restore()
-            }
-            // Bacterias
-            for (b in bact) {
-                val sc = if (b.inside) max(0.1f, 1f - b.eaten / 4f) else 1f
-                cv.save(); cv.rotate(Math.toDegrees((b.phase + time * 0.5).toDouble()).toFloat(), b.x, b.y)
-                fill(col(0xFF7AD05AL)); rrect(b.x - 9f * d * sc, b.y - 3.6f * d * sc, b.x + 9f * d * sc, b.y + 3.6f * d * sc, 3.6f * d * sc)
-                stroke(col(0xFFB8F090L), 1f * d); for (k in 0..2) { val a2 = time * 6f + k; line(b.x - 9f * d * sc, b.y, b.x - 15f * d * sc, b.y + sin(a2) * 5f * d) }
-                cv.restore()
+            for (e in plt) Sprites.draw(canvas, "plt", e.x, e.y, e.r * 3.6f, Math.toDegrees(e.ang.toDouble()).toFloat())
+            for (bb in bact) {
+                val sc = if (bb.inside) max(0.1f, 1f - bb.eaten / 4f) else 1f
+                Sprites.draw(canvas, "bact", bb.x, bb.y, 30f * d * sc, Math.toDegrees((bb.phase + time * 0.5).toDouble()).toFloat())
             }
             // Glóbulos rojos por planos de profundidad: lejos -> cerca
             for (dep in floatArrayOf(0.6f, 1f, 1.35f)) {
                 for (e in rbc) if (e.depth == dep) drawRbc(canvas, e)
                 if (dep == 1f) {
                     for (o in o2) { fill((min(1f, o.life) * 200).toInt().shl(24).or(0xBFEFFF)); circle(o.x, o.y, 2.6f * d) }
-                    for (e in wbc) drawWbc(e)
+                    for (e in wbc) Sprites.draw(canvas, if (e.type == 1) "lymph" else "wbc", e.x, e.y, e.r * 2.5f, e.ang * 20f)
                 }
             }
-            for (o in bact) if (o.inside) { fill(col(0xAA7AD05AL)); circle(o.x, o.y, 4f * d * max(0.2f, 1f - o.eaten / 4f)) }
         }
-        canvas.drawRect(0f, 0f, w, h, vignette ?: return)
         if (!overlay.isOpen && time < 10f) { kit.text("Toca una célula para saber qué es", w / 2, h * 0.95f, 13f * d, col(0x88FFFFFFL)) }
         overlay.draw(canvas, w, h)
     }

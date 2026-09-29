@@ -205,17 +205,12 @@ class ProkaryoteScene(private val d: Float) : Scene {
         paint.style = Paint.Style.FILL; paint.color = color
     }
 
-    private fun ring(inset: Float, grow: Float = 0f) = rect.set(cx - a - grow + inset, cy - b - grow + inset, cx + a + grow - inset, cy + b + grow - inset)
-
     override fun draw(canvas: Canvas) {
-        canvas.drawColor(0xFF02050A.toInt())
-        val cyto = cytoPaint ?: return
-
-        // Cápsula
-        ring(0f, 16f * d); fill(0x331F6A48); canvas.drawOval(rect, paint)
+        canvas.drawColor(0xFF000000.toInt())
+        Sprites.bg(canvas, "bg_prok", w, h)
+        val by = cy + b
 
         // Flagelo: filamento ondulante y motor basal
-        val by = cy + b
         path.reset()
         val steps = 40
         val len = h - by
@@ -225,68 +220,40 @@ class ProkaryoteScene(private val d: Float) : Scene {
             val py = by + 6f * d + f * len
             if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
         }
-        stroke(0xFF8FD0A8.toInt(), 2.6f * d); canvas.drawPath(path, paint)
+        stroke(0x668FD0A8, 5.5f * d); canvas.drawPath(path, paint)
+        stroke(0xFFBFEBCF.toInt(), 2.6f * d); canvas.drawPath(path, paint)
 
         // Pili
-        stroke(0x996FAE7A.toInt(), 1.2f * d)
+        stroke(0x99BFE8C8.toInt(), 1.3f * d)
         for (i in 0 until 28) {
             val t = i / 28f * 2f * PI.toFloat()
             if (sin(t) > 0.85f) continue
             val nx = cos(t) / a; val ny = sin(t) / b
             val nl = sqrt(nx * nx + ny * ny)
             val sx = cx + a * cos(t); val sy = cy + b * sin(t)
-            val l = (10f + (i % 3) * 4f) * d
-            val sway = sin(time * 2f + i) * 2f * d
-            canvas.drawLine(sx, sy, sx + nx / nl * l + sway, sy + ny / nl * l, paint)
+            val l = (26f + (i % 3) * 8f) * d
+            val sway = sin(time * 2f + i) * 3f * d
+            canvas.drawLine(sx + nx / nl * 14f * d, sy + ny / nl * 14f * d, sx + nx / nl * l + sway, sy + ny / nl * l, paint)
         }
 
-        // Citoplasma, pared celular y membrana plasmática
-        ring(7f * d); canvas.drawOval(rect, cyto)
-        ring(0f); stroke(0xFF4F8F6A.toInt(), 6f * d); canvas.drawOval(rect, paint)
-        ring(7f * d); stroke(0xFFE0B45A.toInt(), 3f * d); canvas.drawOval(rect, paint)
-
-        // Nucleoide: ADN circular superenrollado, se retuerce lentamente
-        for (strand in 0..1) {
-            path.reset()
-            val n = 150
-            val ph = strand * 1.7f
-            for (i in 0..n) {
-                val t = i.toFloat() / n * 2f * PI.toFloat()
-                val rr = 1f + 0.18f * sin(5f * t + time * 0.5f + ph) + 0.12f * sin(9f * t - time * 0.7f + ph) +
-                    0.08f * sin(14f * t + time * 0.9f)
-                val px = cx + a * 0.42f * rr * cos(t) + a * 0.08f * sin(3f * t + time * 0.3f + ph)
-                val py = cy - b * 0.04f + b * 0.26f * rr * sin(t) + b * 0.03f * cos(4f * t + time * 0.4f)
-                if (i == 0) path.moveTo(px, py) else path.lineTo(px, py)
-            }
-            path.close()
-            stroke(if (strand == 0) 0x40FFCF66 else 0x30FFB347, 5f * d); canvas.drawPath(path, paint)
-            stroke(if (strand == 0) 0xFFFFE08A.toInt() else 0xFFFFB347.toInt(), 1.4f * d); canvas.drawPath(path, paint)
-        }
+        // Nucleoide: ADN circular superenrollado (3D)
+        Sprites.draw(canvas, "nucleoid", cx, cy - b * 0.04f, a * 1.05f * (1f + 0.02f * sin(time * 0.6f)), time * 4f)
 
         // Plásmidos
-        for (k in 0..1) {
-            val t = time * (0.16f + 0.07f * k) + k * 3.1f
-            val px = cx + a * 0.62f * cos(t) * (if (k == 0) 1f else -1f)
-            val py = cy + b * 0.55f * sin(t * 1.3f + k)
-            stroke(0xFFFF8FA3.toInt(), 1.6f * d); canvas.drawCircle(px, py, 8f * d, paint)
-            fill(0xFFFF8FA3.toInt()); canvas.drawCircle(px + 8f * d, py, 1.8f * d, paint)
-        }
+        val pp = FloatArray(2)
+        for (k in 0..1) { plasmidPos(k, pp); Sprites.draw(canvas, "plasmid", pp[0], pp[1], 30f * d, time * 20f + k * 90f) }
 
         // Gránulos de reserva
         for (g in granules) {
             val px = cx + a * (g.u + 0.05f * sin(time * 0.3f + g.ph))
             val py = cy + b * (g.v + 0.05f * cos(time * 0.25f + g.ph))
-            fill(0xB8E8EEF0.toInt()); canvas.drawCircle(px, py, g.r, paint)
-            fill(0xCCFFFFFF.toInt()); canvas.drawCircle(px - g.r * 0.3f, py - g.r * 0.3f, g.r * 0.3f, paint)
+            Sprites.draw(canvas, "pearl", px, py, g.r * 2.6f)
         }
 
         // Ribosomas (brillan cuando traducen)
         for (r in ribos) {
-            if (r.glow > 0f) {
-                fill(0x55FF9CE0); canvas.drawCircle(r.x, r.y, r.r * 3.2f * (0.5f + r.glow), paint)
-                fill(0xFFFFD6F5.toInt())
-            } else fill(0xFFB58CE8.toInt())
-            canvas.drawCircle(r.x, r.y, r.r, paint)
+            if (r.glow > 0f) { fill(0x55FF9CE0); canvas.drawCircle(r.x, r.y, r.r * 3.4f * (0.5f + r.glow), paint) }
+            Sprites.draw(canvas, "ribo", r.x, r.y, r.r * 5.2f)
         }
 
         // ATP sintasas en la membrana

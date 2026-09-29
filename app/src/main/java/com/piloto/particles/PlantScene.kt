@@ -157,95 +157,35 @@ class PlantScene(private val d: Float) : Scene {
         }
     }
 
-    private inline fun dp(x: Float, y: Float, rot: Float = 0f, block: () -> Unit) {
-        kit.cv.save(); kit.cv.translate(x, y); kit.cv.rotate(rot); kit.cv.scale(d, d)
-        block(); kit.cv.restore()
-    }
-
     override fun draw(canvas: Canvas) {
         kit.cv = canvas
-        val cyto = cytoPaint ?: return
-        canvas.drawColor(col(0xFF03060BL))
+        canvas.drawColor(col(0xFF000000L))
+        Sprites.bg(canvas, "bg_plant", w, h)
         val o = FloatArray(4)
         with(kit) {
-            // Pared celular: lámina media, pared primaria con microfibrillas, membrana
-            stroke(col(0xFFE8E0A0L), 5f * d); rrect(cl - 9f * d, ct - 9f * d, cr + 9f * d, cb + 9f * d, 42f * d)
-            stroke(col(0xFF7A9A3CL), 15f * d); rrect(cl - 1f * d, ct - 1f * d, cr + 1f * d, cb + 1f * d, 38f * d)
-            p.style = Paint.Style.STROKE; p.strokeWidth = 1.3f * d; p.color = col(0xFFD4EC8AL)
-            canvas.drawLines(wallTicks, p)
-            stroke(col(0xFFBBD46AL), 3f * d); rrect(cl + 6f * d, ct + 6f * d, cr - 6f * d, cb - 6f * d, 32f * d)
-            rect.set(cl + 8f * d, ct + 8f * d, cr - 8f * d, cb - 8f * d)
-            canvas.drawRoundRect(rect, 30f * d, 30f * d, cyto)
-            stroke(col(0xFFE0B45AL), 2f * d); rrect(cl + 8f * d, ct + 8f * d, cr - 8f * d, cb - 8f * d, 30f * d)
-            // plasmodesmos
+            // plasmodesmos sobre la pared
             var i = 0
             while (i + 3 < pd.size) {
-                fill(col(0xFF2B5E44L)); circle(pd[i], pd[i + 1], 6f * d)
-                stroke(col(0xFF4FB0C0L), 2f * d); line(pd[i] - pd[i + 2] * 12f * d, pd[i + 1] - pd[i + 3] * 12f * d, pd[i] + pd[i + 2] * 12f * d, pd[i + 1] + pd[i + 3] * 12f * d)
+                fill(col(0xFF1F4A36L)); circle(pd[i], pd[i + 1], 5f * d)
+                stroke(col(0xFF4FB0C0L), 2f * d); line(pd[i] - pd[i + 2] * 10f * d, pd[i + 1] - pd[i + 3] * 10f * d, pd[i] + pd[i + 2] * 10f * d, pd[i + 1] + pd[i + 3] * 10f * d)
                 i += 4
             }
-
-            // Vacuola central con tonoplasto
-            fill(col(0xFF1E5E7EL)); rrect(vl, vt, vr, vb, 90f * d)
-            stroke(col(0xFF7FC4E0L), 2.4f * d); rrect(vl, vt, vr, vb, 90f * d)
+            // pigmentos y iones dentro de la vacuola
             canvas.save(); canvas.clipRect(vl + 8f * d, vt + 8f * d, vr - 8f * d, vb - 8f * d)
-            for (k in 0 until 26) {
+            for (k in 0 until 22) {
                 val px = vl + (vr - vl) * (0.5f + 0.42f * sin(k * 2.3f + time * 0.15f))
                 val py = vt + (vb - vt) * (0.5f + 0.44f * cos(k * 1.7f + time * 0.12f + k))
-                if (k % 4 == 0) { fill(col(0xAAB05AD8L)); circle(px, py, 5f * d) } else { fill(col(0x88E8D06AL)); circle(px, py, 2.2f * d) }
+                if (k % 4 == 0) { fill(col(0x88B05AD8L)); circle(px, py, 5f * d) } else { fill(col(0x66E8D06AL)); circle(px, py, 2.2f * d) }
             }
-            stroke(col(0x14FFFFFFL), 14f * d)
-            for (k in 0..3) { val yy = vt + ((time * 20f * d + k * (vb - vt) / 4f) % (vb - vt)); line(vl, yy, vr, yy - 120f * d) }
             canvas.restore()
-
-            // Retículo liso y Golgi
-            dp(sx, sy) {
-                for (c in arrayOf(floatArrayOf(-40f, 10f, -20f, -36f, 10f, 36f, 40f, -10f), floatArrayOf(-34f, -26f, -8f, 10f, 20f, -30f, 40f, 24f))) {
-                    path.reset(); path.moveTo(c[0], c[1]); path.cubicTo(c[2], c[3], c[4], c[5], c[6], c[7])
-                    stroke(col(0xFF4FB0C0L), 7f); drawPath(); stroke(col(0xFF17434DL), 3.5f); drawPath()
-                }
-            }
-            dp(gx, gy, -10f) {
-                val colors = intArrayOf(col(0xFF7FD69AL), col(0xFF9AD98AL), col(0xFFC3D77AL), col(0xFFE3B95AL), col(0xFFE8935AL))
-                for (q in 0..4) { val y = -18f + q * 9f; path.reset(); path.moveTo(-30f + q, y + 5f); path.quadTo(0f, y - 12f, 30f - q, y + 5f); stroke(colors[q], 4f); drawPath() }
-                fill(col(0xFFE8935AL)); circle(34f + sin(time * 2f) * 2f, 24f, 4f)
-            }
-
-            // Núcleo y retículo rugoso
-            dp(nx, ny) {
-                val r = nr / d
-                for (q in 0..2) {
-                    val rr = r + 9f + q * 9f
-                    curve(60) { f, oo -> val an = -1.2f + q * 0.35f + f * 4.4f; val z = rr + 2f * sin(an * 8f + q + time * 0.6f); oo[0] = cos(an) * z; oo[1] = sin(an) * z }
-                    stroke(col(0xFF3E9AA8L), 5f); drawPath(); stroke(col(0xFF0F2A30L), 2f); drawPath()
-                    fill(col(0xFFC79CFFL)); for (k in 0 until 30) { val an = -1.2f + q * 0.35f + k / 30f * 4.4f; circle(cos(an) * (rr + 4.5f), sin(an) * (rr + 4.5f), 1.3f) }
-                }
-                fill(col(0xFF161C5CL)); circle(0f, 0f, r)
-                stroke(col(0xFF8F9BFFL), 2.4f); circle(0f, 0f, r)
-                fill(col(0xFFFFD27FL)); for (k in 0 until 16) { val an = k * TAU / 16f; circle(cos(an) * (r - 2f), sin(an) * (r - 2f), 2.2f) }
-                stroke(col(0x88A6B0FFL), 1.4f)
-                for (q in 0..7) { curve(24) { f, oo -> val an = q * 0.8f + f * 5f + sin(time * 0.2f + q) * 0.3f; val z = r * 0.78f * (0.25f + 0.75f * f); oo[0] = cos(an) * z; oo[1] = sin(an) * z }; drawPath() }
-                fill(col(0xFF5A3A9AL)); circle(r * 0.3f, r * 0.2f, r * 0.2f)
-            }
-
-            // Mitocondrias y cloroplastos en corriente citoplasmática
-            for (m in mitos) { place(m, o); dp(o[0], o[1], Math.toDegrees(kotlin.math.atan2(o[3], o[2]).toDouble()).toFloat()) {
-                fill(col(0xFF7A2E1EL)); rrect(-19f, -8f, 19f, 8f, 8f)
-                stroke(col(0xFFE89A5AL), 1.6f); rrect(-19f, -8f, 19f, 8f, 8f)
-                stroke(col(0xFFFFC98AL), 1.8f); for (q in 0..3) { val x = -12f + q * 8f; if (q % 2 == 0) line(x, -7f, x, 1.5f) else line(x, 7f, x, -1.5f) }
-            } }
-            for (m in chloros) { place(m, o); dp(o[0], o[1], Math.toDegrees(kotlin.math.atan2(o[3], o[2]).toDouble()).toFloat() + m.ph * 8f) {
-                fill(col(0xFF1E6B2EL)); oval(-24f, -12f, 24f, 12f)
-                stroke(col(0xFF7FD88AL), 1.5f); oval(-24f, -12f, 24f, 12f)
-                fill(col(0xFF3EBE55L))
-                for (g in 0..2) for (q in 0..2) oval(-15f + g * 13f - 5f, -5f + q * 3.4f, -15f + g * 13f + 5f, -5f + q * 3.4f + 2.2f)
-                fill(col(0xFFEDEDE0L)); oval(9f, -8f, 16f, -4f)
-            } }
-
-            // Ribosomas libres
-            fill(col(0xFFB58CE8L))
-            for (r in ribos) circle(r.x, r.y, 1.9f * d)
-
+            Sprites.draw(canvas, "ser", sx, sy, 140f * d)
+            Sprites.draw(canvas, "golgi", gx, gy, 130f * d, -10f)
+            Sprites.draw(canvas, "er", nx - nr * 0.6f, ny + nr * 0.9f, nr * 2.4f, 10f)
+            Sprites.draw(canvas, "er", nx + nr * 0.95f, ny + nr * 0.5f, nr * 2.1f, -30f)
+            Sprites.draw(canvas, "nucleus", nx, ny, nr * 2.35f, sin(time * 0.1f) * 3f)
+            for ((i, m) in mitos.withIndex()) { place(m, o); Sprites.draw(canvas, if (i % 2 == 0) "mito1" else "mito2", o[0], o[1], 70f * d, Math.toDegrees(kotlin.math.atan2(o[3], o[2]).toDouble()).toFloat()) }
+            for ((i, m) in chloros.withIndex()) { place(m, o); Sprites.draw(canvas, if (i % 2 == 0) "chloro1" else "chloro2", o[0], o[1], 92f * d, Math.toDegrees(kotlin.math.atan2(o[3], o[2]).toDouble()).toFloat() + m.ph * 6f) }
+            for (r in ribos) Sprites.draw(canvas, "ribo", r.x, r.y, 10f * d)
             if (!overlay.isOpen && time < 12f) text("Toca un orgánulo para verlo en detalle", w / 2, h * 0.93f, 13f * d, col(0x88FFFFFFL))
         }
         overlay.draw(canvas, w, h)

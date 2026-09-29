@@ -134,116 +134,36 @@ class EukaryoteScene(private val d: Float) : Scene {
         }
     }
 
-    private inline fun dp(x: Float, y: Float, rot: Float = 0f, block: () -> Unit) {
-        kit.cv.save(); kit.cv.translate(x, y); kit.cv.rotate(rot); kit.cv.scale(d, d)
-        block(); kit.cv.restore()
-    }
-
     override fun draw(canvas: Canvas) {
         kit.cv = canvas
-        val cyto = cytoPaint ?: return
-        canvas.drawColor(col(0xFF03060BL))
+        canvas.drawColor(col(0xFF000000L))
+        Sprites.bg(canvas, "bg_euk", w, h)
         with(kit) {
-            fill(col(0x22FFC24DL)); oval(cx - a - 12f * d, cy - b - 12f * d, cx + a + 12f * d, cy + b + 12f * d)
-            fill(col(0xFF15303FL)); oval(cx - a, cy - b, cx + a, cy + b)
-            canvas.drawOval(cx - a, cy - b, cx + a, cy + b, cyto)
-
             // Microtúbulos desde el centrosoma
-            stroke(col(0x22FFC24DL), 1.4f * d)
+            stroke(col(0x22FFC24DL), 1.2f * d)
             for (i in 0 until 12) {
                 val an = i * TAU / 12f + 0.3f
                 val len = (120f + 90f * (0.5f + 0.5f * sin(time * 0.5f + i * 1.7f))) * d
                 line(ex, ey, ex + cos(an) * len, ey + sin(an) * len)
             }
-
-            // Membrana plasmática: doble capa de fosfolípidos
-            p.style = Paint.Style.STROKE; p.strokeWidth = 1.2f * d; p.color = col(0xFFC98F3AL)
-            canvas.drawLines(tails, p)
-            p.strokeWidth = 4.6f * d; p.color = col(0xFFF2C46BL)
-            canvas.drawPoints(heads, 0, heads.size, p)
-            fill(col(0xFF3FA37AL))
-            for (i in 0 until heads.size / 4 step 14) circle(heads[i * 4 + 2] * 0.5f + heads[i * 4] * 0.5f, heads[i * 4 + 3] * 0.5f + heads[i * 4 + 1] * 0.5f, 4.2f * d)
-            stroke(col(0xFF8FD0FFL), 1.3f * d)
-            for (i in 0 until heads.size / 4 step 9) line(heads[i * 4], heads[i * 4 + 1], heads[i * 4] + (heads[i * 4] - cx) / a * 9f * d, heads[i * 4 + 1] + (heads[i * 4 + 1] - cy) / b * 9f * d)
-
-            // Retículo liso
-            dp(sx, sy) {
-                val c = arrayOf(floatArrayOf(-46f, 12f, -20f, -42f, 10f, 42f, 46f, -12f), floatArrayOf(-40f, -30f, -10f, 10f, 20f, -34f, 44f, 28f), floatArrayOf(-30f, 40f, 0f, 20f, 26f, 46f, 44f, 4f))
-                for (cc in c) { path.reset(); path.moveTo(cc[0], cc[1]); path.cubicTo(cc[2], cc[3], cc[4], cc[5], cc[6], cc[7])
-                    stroke(col(0xFF4FB0C0L), 8f); drawPath(); stroke(col(0xFF17434DL), 4f); drawPath() }
-            }
-
-            // Núcleo y retículo rugoso
-            dp(nx, ny) {
-                val r = nr / d
-                for (k in 0..3) {
-                    val rr = r + 9f + k * 9f
-                    curve(70) { f, o -> val an = -1.2f + k * 0.35f + f * 4.4f; val q = rr + 2f * sin(an * 8f + k + time * 0.6f); o[0] = cos(an) * q; o[1] = sin(an) * q }
-                    stroke(col(0xFF3E9AA8L), 5f); drawPath(); stroke(col(0xFF0F2A30L), 2f); drawPath()
-                    fill(col(0xFFC79CFFL))
-                    for (i in 0 until 36) { val an = -1.2f + k * 0.35f + i / 36f * 4.4f; circle(cos(an) * (rr + 4.5f), sin(an) * (rr + 4.5f), 1.3f) }
-                }
-                fill(col(0xFF161C5CL)); circle(0f, 0f, r)
-                stroke(col(0xFF8F9BFFL), 2.4f); circle(0f, 0f, r)
-                stroke(col(0xFF5E6BE0L), 1.4f); circle(0f, 0f, r - 4f)
-                fill(col(0xFFFFD27FL))
-                for (i in 0 until 18) { val an = i * TAU / 18f; circle(cos(an) * (r - 2f), sin(an) * (r - 2f), 2.2f) }
-                stroke(col(0x88A6B0FFL), 1.4f)
-                for (s in 0..8) {
-                    curve(30) { f, o -> val an = s * 0.7f + f * 5f + sin(time * 0.2f + s) * 0.3f; val q = r * 0.78f * (0.25f + 0.75f * f); o[0] = cos(an) * q; o[1] = sin(an) * q }
-                    drawPath()
-                }
-                fill(col(0xFF5A3A9AL)); circle(r * 0.3f, r * 0.2f, r * 0.2f)
-                fill(col(0xFF8A62C8L)); circle(r * 0.3f + 3f, r * 0.2f - 2f, 2f)
-            }
-
-            // Golgi
-            dp(gx, gy, -20f) {
-                val colors = intArrayOf(col(0xFF7FD69AL), col(0xFF9AD98AL), col(0xFFC3D77AL), col(0xFFE3B95AL), col(0xFFE8935AL))
-                for (i in 0..4) {
-                    val y = -18f + i * 9f
-                    path.reset(); path.moveTo(-30f + i, y + 5f); path.quadTo(0f, y - 12f, 30f - i, y + 5f)
-                    stroke(colors[i], 4f); drawPath()
-                }
-                fill(col(0xFFE8935AL)); circle(34f + sin(time * 2f) * 2f, 24f, 4f); circle(-36f, -8f + cos(time * 2f), 3f)
-            }
-
-            // Mitocondrias
-            for (m in mitos) dp(mx(m), my(m), m.rot) {
-                fill(col(0xFF7A2E1EL)); rrect(-40f, -18f, 40f, 18f, 18f)
-                stroke(col(0xFFE89A5AL), 2.4f); rrect(-40f, -18f, 40f, 18f, 18f)
-                stroke(col(0xFFFFC98AL), 3f)
-                for (i in 0..4) { val x = -28f + i * 14f; if (i % 2 == 0) line(x, -16f, x, 3f) else line(x, 16f, x, -3f) }
-                fill(col(0xFFFFD84AL)); circle(-30f + ((time * 15f + m.ph * 9f) % 60f), sin(time * 3f + m.ph) * 6f, 1.8f)
-            }
-
-            // Lisosomas
-            for (m in lysos) dp(mx(m), my(m)) {
-                fill(col(0xFF5C3A12L)); circle(0f, 0f, 9f)
-                stroke(col(0xFFE0A04AL), 1.6f); circle(0f, 0f, 9f)
-                fill(col(0xFFFF9D3AL))
-                for (i in 0 until 4) circle(cos(time + i * 1.6f) * 4f, sin(time * 1.2f + i * 1.6f) * 4f, 1.4f)
-            }
-
-            // Centrosoma
-            dp(ex, ey) {
-                fill(col(0xFFC7D2FFL)); rrect(-9f, -3f, 9f, 3f, 3f); rrect(-3f, 5f, 3f, 23f, 3f)
-                stroke(col(0xFF8FA8FFL), 1f); circle(0f, 0f, 14f)
-            }
-
-            // Vesículas del Golgi a la membrana
+            // Retículo rugoso alrededor del núcleo, liso y Golgi
+            Sprites.draw(canvas, "er", nx - nr * 0.55f, ny + nr * 0.95f, nr * 2.5f, 12f)
+            Sprites.draw(canvas, "er", nx + nr * 0.95f, ny + nr * 0.6f, nr * 2.2f, -28f)
+            Sprites.draw(canvas, "er", nx - nr * 0.95f, ny - nr * 0.2f, nr * 1.9f, 78f)
+            Sprites.draw(canvas, "ser", sx, sy, 150f * d, sin(time * 0.2f) * 3f)
+            Sprites.draw(canvas, "golgi", gx, gy, 135f * d, -12f)
+            Sprites.draw(canvas, "nucleus", nx, ny, nr * 2.35f, sin(time * 0.1f) * 3f)
+            for ((i, m) in mitos.withIndex()) Sprites.draw(canvas, if (i % 2 == 0) "mito1" else "mito2", mx(m), my(m), 108f * d, m.rot + sin(time * 0.3f + m.ph) * 6f)
+            for (m in lysos) Sprites.draw(canvas, "lyso", mx(m), my(m), 32f * d)
+            Sprites.draw(canvas, "centriole", ex, ey, 74f * d, sin(time * 0.2f) * 8f)
+            // Vesículas del Golgi hacia la membrana
             for (i in 0 until 5) {
                 val f = ((time * 0.12f + i / 5f) % 1f)
-                val tx2 = gx + (a * 0.96f - (gx - cx)) * f * 0.9f
-                val ty2 = gy + (b * 0.35f) * f
-                fill(col(0xFF7FD8E6L)); circle(tx2, ty2, 3.4f * d * (1f - f * 0.5f))
-                fill(col(0xFFFFD84AL)); circle(tx2, ty2, 1.5f * d)
+                val vx = gx + (a * 0.96f - (gx - cx)) * f * 0.9f
+                val vy = gy + (b * 0.35f) * f
+                Sprites.draw(canvas, "lyso", vx, vy, 14f * d * (1f - f * 0.4f))
             }
-
-            // Ribosomas libres
-            fill(col(0xFFB58CE8L))
-            for (r in ribos) circle(r.x, r.y, 1.9f * d)
-
+            for (r in ribos) Sprites.draw(canvas, "ribo", r.x, r.y, 10f * d)
             if (!overlay.isOpen && time < 12f) text("Toca un orgánulo para verlo en detalle", w / 2, h * 0.93f, 13f * d, col(0x88FFFFFFL))
         }
         overlay.draw(canvas, w, h)

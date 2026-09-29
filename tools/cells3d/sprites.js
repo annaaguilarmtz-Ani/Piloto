@@ -25,7 +25,7 @@ vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){
   if(id<4.5){ gloss=0.4; return vec3(0.35,0.10,0.10); }
   gloss=0.8; return vec3(0.95,0.95,0.85);
 }` };
-S.nucleus = { w: 512, h: 512, half: 1.05, rot: [-0.35, 0.3, 0.0], tint: [0.4, 0.3, 0.9], glsl: `
+S.nucleus = { exp: 0.8, w: 512, h: 512, half: 1.05, rot: [-0.35, 0.3, 0.0], tint: [0.4, 0.3, 0.9], glsl: `
 float mapD(vec3 q, out float id){
   float R=0.9;
   vec3 n=normalize(q+1e-4);
@@ -44,7 +44,7 @@ vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){
   float m=fbm(p*5.0); gloss=0.7; sss=0.6;
   if(id<1.5){ gloss=0.85; return mix(vec3(0.30,0.34,0.80),vec3(0.50,0.55,0.95),m); }
   if(id<2.5){ gloss=0.7; return mix(vec3(0.40,0.45,0.85),vec3(0.62,0.66,1.0),m); }
-  if(id<3.5){ gloss=0.5; return mix(vec3(0.55,0.42,0.90),vec3(0.75,0.62,1.0),m); }
+  if(id<3.5){ gloss=0.5; return mix(vec3(0.42,0.30,0.78),vec3(0.62,0.48,0.95),m); }
   gloss=0.4; return mix(vec3(0.35,0.14,0.50),vec3(0.55,0.28,0.70),m);
 }` };
 S.chloro = { w: 512, h: 384, half: 0.75, rot: [-0.5, 0.0, 0.2], tint: [0.2, 0.9, 0.3], glsl: `
@@ -78,15 +78,13 @@ vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){
   gloss=0.5; return vec3(0.30,0.32,0.10);
 }` };
 
-S.golgi = { w: 512, h: 384, half: 0.95, rot: [-0.75, 0.25, 0.0], tint: [0.3, 0.8, 0.5], glsl: `
+S.golgi = { step: 0.5, exp: 0.85, w: 512, h: 384, half: 0.95, rot: [-0.75, 0.25, 0.0], tint: [0.3, 0.8, 0.5], glsl: `
 float mapD(vec3 q, out float id){
   float d=1e9; id=1.0;
   for(int i=0;i<6;i++){ float fi=float(i);
-    vec3 p=q; p.y+=0.32*p.x*p.x-0.05*p.z*p.z;
+    vec3 p=q; p.y+=0.22*p.x*p.x-0.03*p.z*p.z;
     float w=0.82-0.05*fi, z=0.46-0.035*fi;
-    float pl=sdBox(p-vec3(0.0,-0.5+fi*0.19,0.0),vec3(w,0.026,z))-0.02;
-    float holes=fbm(vec3(q.x*7.0,q.z*7.0,fi*3.0)); pl=max(pl,(holes-0.60)*0.09);
-    pl=max(pl, -(length(vec2(p.x/w,p.z/z))-0.0)*0.0-1.0+length(vec2(p.x/w,p.z/z))*1.0+ -0.0);
+    float pl=(sdBox(p-vec3(0.0,-0.5+fi*0.19,0.0),vec3(w,0.026,z))-0.02)*0.7;
     if(pl<d){d=pl;id=1.0+fi;} }
   float v=1e9; for(int i=0;i<10;i++){ float fi=float(i); vec3 c=vec3(-0.95+fi*0.21, -0.55+0.9*fract(fi*0.618), 0.62*sin(fi*2.4)); v=min(v,length(q-c)-0.06-0.02*fract(fi*0.37)); }
   if(v<d){d=v;id=8.0;}
@@ -98,13 +96,12 @@ vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){
   float t=(id-1.0)/5.0;
   return mix(mix(vec3(0.20,0.72,0.55),vec3(0.55,0.80,0.35),t*2.0),mix(vec3(0.55,0.80,0.35),vec3(0.92,0.55,0.20),clamp(t*2.0-1.0,0.0,1.0)),step(0.5,t))*(0.85+0.3*m);
 }` };
-S.er = { w: 512, h: 384, half: 1.0, rot: [-0.85, 0.3, 0.0], tint: [0.2, 0.6, 0.8], glsl: `
+S.er = { step: 0.5, exp: 0.85, w: 512, h: 384, half: 1.0, rot: [-0.85, 0.3, 0.0], tint: [0.2, 0.6, 0.8], glsl: `
 float mapD(vec3 q, out float id){
   float d=1e9; id=1.0; float rb=1e9;
   for(int i=0;i<3;i++){ float fi=float(i); float y=-0.45+fi*0.42;
     float wave=0.07*sin(q.x*5.0+q.z*3.0+fi*2.0)+0.03*sin(q.z*9.0+fi);
-    float sheet=abs(q.y-y-wave)-0.028; sheet=max(sheet,max(abs(q.x)-0.95,abs(q.z)-0.6));
-    sheet=max(sheet, (fbm(vec3(q.xz*6.0,fi))-0.66)*0.08);
+    float sheet=(abs(q.y-y-wave)-0.028)*0.6; sheet=max(sheet,max(abs(q.x)-0.95,abs(q.z)-0.6));
     if(sheet<d){d=sheet;id=1.0;}
     vec2 cell=floor(q.xz/0.10+0.5); float hh=hash(vec3(cell,fi));
     vec2 c2=(cell+ (vec2(hash(vec3(cell,fi+5.0)),hash(vec3(cell,fi+9.0)))-0.5)*0.4)*0.10;
@@ -118,7 +115,7 @@ vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){
   if(id<1.5){ return mix(vec3(0.15,0.55,0.62),vec3(0.30,0.75,0.80),m); }
   gloss=0.6; return mix(vec3(0.55,0.35,0.85),vec3(0.75,0.55,1.0),m);
 }` };
-S.ser = { w: 512, h: 384, half: 1.0, rot: [-0.6, 0.2, 0.0], tint: [0.2, 0.6, 0.8], glsl: `
+S.ser = { step: 0.6, w: 512, h: 384, half: 1.0, rot: [-0.6, 0.2, 0.0], tint: [0.2, 0.6, 0.8], glsl: `
 float tube(vec3 q, vec3 a, vec3 b, vec3 c){ return min(sdC(q,a,b,0.09,0.09),sdC(q,b,c,0.09,0.09)); }
 float mapD(vec3 q, out float id){
   float d=1e9; id=1.0;
@@ -160,33 +157,50 @@ float mapD(vec3 q, out float id){ id=1.0;
   vec3 p2=q-vec3(0.35,-0.35,0.0); p2=vec3(p2.y,p2.x,p2.z); float b=cent(p2);
   return min(a,b); }
 vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.75; sss=0.5; return mix(vec3(0.35,0.42,0.85),vec3(0.60,0.68,1.0),fbm(p*8.0)); }` };
-S.rbc = { w: 192, h: 192, half: 1.0, rot: [0.0, 0.0, 0.0], tint: [0.9, 0.1, 0.1], glsl: `
+S.rbc = { exp: 0.8, w: 192, h: 192, half: 1.0, rot: [0.0, 0.0, 0.0], tint: [0.9, 0.1, 0.1], glsl: `
 float mapD(vec3 q, out float id){ id=1.0;
-  float R=0.86; float r=length(q.xz); float s=min(r/R,1.0);
-  float t=R*sqrt(max(1.0-s*s,0.0))*(0.207+2.003*s*s-1.123*s*s*s*s)*0.5;
-  float dr=r-R, dy=abs(q.y)-t;
+  float R=0.86; float r=length(q.xy); float s=min(r/R,1.0);
+  float t=R*sqrt(max(1.0-s*s,0.0))*(0.207+2.003*s*s-1.123*s*s*s*s)*0.42;
+  float dr=r-R, dy=abs(q.z)-t;
   float d=length(vec2(max(dr,0.0),max(dy,0.0)))+min(max(dr,dy),0.0);
   return d*0.7-0.02+0.004*(fbm(q*10.0)-0.5); }
 vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.55; sss=1.0; float m=fbm(p*5.0);
-  float dimple=1.0-smoothstep(0.0,0.55,length(p.xz)); return mix(vec3(0.72,0.07,0.09),vec3(0.86,0.16,0.16),m)*(1.0-0.3*dimple); }` };
-S.wbc = { w: 256, h: 256, half: 1.05, rot: [-0.3, 0.3, 0.0], tint: [0.9, 0.7, 0.6], glsl: `
+  float dimple=1.0-smoothstep(0.0,0.55,length(p.xy)); return mix(vec3(0.50,0.02,0.05),vec3(0.72,0.07,0.09),m)*(1.0-0.35*dimple); }` };
+S.wbc = { exp: 0.72, w: 256, h: 256, half: 1.05, rot: [-0.3, 0.3, 0.0], tint: [0.9, 0.7, 0.6], glsl: `
 float mapD(vec3 q, out float id){ id=1.0;
   return length(q)-0.85+0.05*fbm(q*4.5)+0.025*noise(q*16.0)-0.03; }
 vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.55; sss=0.8; float m=fbm(p*7.0);
-  vec3 cream=mix(vec3(0.86,0.80,0.68),vec3(0.95,0.90,0.80),m);
-  float nd=1e9; for(int i=0;i<4;i++){ float a=float(i)*1.9+0.4; vec3 c=vec3(cos(a)*0.32,sin(a*1.3)*0.3,0.18+0.2*sin(a)); nd=min(nd,length(p-c)); }
-  vec3 nuc=vec3(0.42,0.28,0.68); float k=smoothstep(0.62,0.32,nd);
+  vec3 cream=mix(vec3(0.78,0.70,0.56),vec3(0.90,0.82,0.68),m);
+  float nd=1e9; for(int i=0;i<4;i++){ float a=float(i)*1.9+0.4; vec3 c=vec3(cos(a)*0.42,sin(a*1.3)*0.38,0.55); nd=min(nd,length(p-c)); }
+  vec3 nuc=vec3(0.38,0.24,0.66); float k=smoothstep(0.50,0.22,nd);
   float gr=smoothstep(0.55,0.75,noise(p*30.0)); return mix(cream,nuc,k*0.85)*(1.0-0.12*gr); }` };
-S.lymph = { w: 256, h: 256, half: 1.05, rot: [-0.3, 0.3, 0.0], tint: [0.9, 0.7, 0.6], glsl: `
+S.lymph = { exp: 0.62, w: 256, h: 256, half: 1.05, rot: [-0.3, 0.3, 0.0], tint: [0.9, 0.7, 0.6], glsl: `
 float mapD(vec3 q, out float id){ id=1.0; return length(q)-0.72+0.04*fbm(q*4.5)+0.02*noise(q*16.0); }
 vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.55; sss=0.8; float m=fbm(p*7.0);
   vec3 cream=mix(vec3(0.70,0.78,0.86),vec3(0.82,0.88,0.94),m);
   float k=smoothstep(0.62,0.20,length(p-vec3(0.05,0.0,0.15))); return mix(cream,vec3(0.32,0.24,0.62),k*0.9); }` };
-S.plt = { w: 128, h: 128, half: 1.0, rot: [-0.4, 0.3, 0.0], tint: [0.9, 0.6, 0.8], glsl: `
+S.plt = { exp: 0.75, w: 128, h: 128, half: 1.0, rot: [-0.4, 0.3, 0.0], tint: [0.9, 0.6, 0.8], glsl: `
 float mapD(vec3 q, out float id){ id=1.0; return sdE(q,vec3(0.85,0.36,0.6))*0.8+0.02*(fbm(q*9.0)-0.5); }
 vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.6; sss=0.8; float g=smoothstep(0.55,0.7,noise(p*22.0));
   return mix(vec3(0.85,0.60,0.80),vec3(0.55,0.30,0.55),g); }` };
-S.bacterium = { w: 256, h: 128, half: 0.75, rot: [-0.3, 0.0, 0.0], tint: [0.4, 0.9, 0.3], glsl: `
+S.bacterium = { exp: 0.8, w: 256, h: 128, half: 0.75, rot: [-0.3, 0.0, 0.0], tint: [0.4, 0.9, 0.3], glsl: `
 float mapD(vec3 q, out float id){ id=1.0; return sdC(q,vec3(-0.45,0,0),vec3(0.45,0,0),0.25,0.25)+0.012*(noise(q*22.0)-0.5); }
 vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.8; sss=0.7; return mix(vec3(0.35,0.72,0.20),vec3(0.55,0.88,0.35),fbm(p*8.0)); }` };
+
+S.nucleoid = { step: 0.6, exp: 0.85, w: 512, h: 512, half: 1.2, rot: [0.3, 0.2, 0.0], tint: [0.9, 0.7, 0.2], glsl: `
+vec3 curveP(float t, float k){ float a=t*6.2831853;
+  float r=1.0+0.22*sin(5.0*a+k)+0.12*sin(9.0*a-k*1.7); 
+  return vec3(cos(a)*r*0.85+0.1*sin(3.0*a+k), sin(a)*r*0.75, 0.30*sin(3.0*a+1.0+k)+0.15*sin(7.0*a)); }
+float mapD(vec3 q, out float id){ float d=1e9; id=1.0;
+  for(int k=0;k<2;k++){ vec3 prev=curveP(0.0,float(k)*1.7);
+    for(int i=1;i<=110;i++){ vec3 cur=curveP(float(i)/110.0,float(k)*1.7); float dd=sdC(q,prev,cur,0.045,0.045); if(dd<d){d=dd; id=1.0+float(k);} prev=cur; } }
+  return d; }
+vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.8; sss=0.8; float m=fbm(p*9.0);
+  if(id<1.5) return mix(vec3(0.95,0.72,0.20),vec3(1.0,0.86,0.40),m); return mix(vec3(0.95,0.50,0.15),vec3(1.0,0.66,0.28),m); }` };
+S.plasmid = { w: 128, h: 128, half: 0.9, rot: [0.9, 0.3, 0.0], tint: [1.0, 0.4, 0.5], glsl: `
+float mapD(vec3 q, out float id){ id=1.0; vec3 p=q.xzy; float t=sdTorus(p,vec2(0.55,0.09)); return t+0.02*sin(atan(p.z,p.x)*14.0)*0.5; }
+vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.85; sss=0.8; return mix(vec3(0.95,0.40,0.55),vec3(1.0,0.60,0.72),fbm(p*8.0)); }` };
+S.pearl = { w: 128, h: 128, half: 1.0, rot: [0.0, 0.0, 0.0], tint: [0.8, 0.8, 0.9], glsl: `
+float mapD(vec3 q, out float id){ id=1.0; return length(q)-0.8+0.02*fbm(q*6.0); }
+vec3 albedoOf(float id, vec3 p, vec3 n, out float gloss, out float sss){ gloss=0.9; sss=0.6; return mix(vec3(0.82,0.86,0.90),vec3(0.95,0.96,0.98),fbm(p*5.0)); }` };
 module.exports = S;
