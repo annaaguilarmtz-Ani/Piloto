@@ -10,7 +10,7 @@ abstract class SceneWallpaperService : WallpaperService() {
 
     abstract fun createScene(density: Float): Scene
 
-    override fun onCreateEngine(): Engine = SceneEngine()
+    override fun onCreateEngine(): Engine { AppCtx.ctx = applicationContext; return SceneEngine() }
 
     private inner class SceneEngine : Engine(), Choreographer.FrameCallback {
         private lateinit var scene: Scene

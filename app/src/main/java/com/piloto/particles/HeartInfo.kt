@@ -24,6 +24,7 @@ object HeartInfo {
         "Nodo sinusal" to "Marcapasos natural, en la aurícula derecha. Genera de 60 a 100 impulsos por minuto y los propaga por las aurículas (onda P del ECG), que se contraen.",
         "Nodo auriculoventricular" to "Retrasa el impulso unos 0,1 s para que las aurículas terminen de vaciarse antes de que se contraigan los ventrículos (segmento PR del ECG).",
         "Haz de His y Purkinje" to "El impulso baja por el haz de His y sus ramas y se reparte por las fibras de Purkinje, activando los ventrículos de la punta hacia la base para una contracción sincronizada (complejo QRS).",
+        "Músculo papilar" to "Los músculos papilares son pilares de músculo que salen de la pared del ventrículo. Sus cuerdas tendinosas (chordae tendineae) se unen a los bordes de las valvas tricúspide y mitral. Al contraerse el ventrículo, tensan las cuerdas y evitan que las valvas se inviertan hacia la aurícula. Si una cuerda se rompe, la válvula pierde su cierre (insuficiencia).",
         "Arteria pulmonar" to "Ramas derecha e izquierda del tronco pulmonar: llevan la sangre desoxigenada a cada pulmón, donde se oxigena en los capilares alveolares."
     ).associate { (k, v) -> k to Info(k, v) }
 }
